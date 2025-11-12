@@ -24,4 +24,5 @@ CLAUDE.md
 *.njsproj
 *.sln
 *.sw?
+.claude
 catalyst-ui-kit
