@@ -3,3 +3,60 @@
 @theme {
   --font-sans: system-ui, -apple-system, sans-serif;
 }
+
+/* Remove scrollbars from the root elements for Tauri */
+html,
+body {
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Subtle scrollbar styling for desktop app look */
+.scrollable {
+  overflow: auto;
+  scrollbar-width: thin; /* Firefox - thin scrollbar */
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent; /* Firefox - thumb and track colors */
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.scrollable::-webkit-scrollbar {
+  width: 8px; /* Vertical scrollbar width */
+  height: 8px; /* Horizontal scrollbar height */
+}
+
+.scrollable::-webkit-scrollbar-track {
+  background: transparent; /* Invisible track */
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2); /* Light gray thumb */
+  border-radius: 4px; /* Rounded corners */
+  border: 2px solid transparent; /* Padding around thumb */
+  background-clip: content-box; /* Makes the border create padding effect */
+}
+
+.scrollable::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3); /* Slightly darker on hover */
+}
+
+/* Dark mode scrollbar */
+.dark .scrollable {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent; /* Firefox dark mode */
+}
+
+.dark .scrollable::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2); /* Light thumb in dark mode */
+}
+
+.dark .scrollable::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3); /* Slightly lighter on hover */
+}
