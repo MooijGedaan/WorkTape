@@ -1,16 +1,54 @@
 use tauri::{Manager, AppHandle, WebviewUrl, WebviewWindowBuilder};
 use std::time::Duration;
+use std::sync::Mutex;
+use std::sync::mpsc::{channel, Sender, Receiver};
+
+// Global channel to control the timer
+static TIMER_CHANNEL: Mutex<Option<Sender<TimerMessage>>> = Mutex::new(None);
+
+enum TimerMessage {
+    CustomInterval(u64), // Custom interval in minutes
+}
 
 pub fn start_prompt_timer(app: AppHandle) {
+    let (tx, rx): (Sender<TimerMessage>, Receiver<TimerMessage>) = channel();
+
+    // Store the sender globally so we can send messages to the timer thread
+    {
+        let mut channel = TIMER_CHANNEL.lock().unwrap();
+        *channel = Some(tx);
+    }
+
     // Spawn background thread for periodic prompts
     std::thread::spawn(move || {
-        loop {
-            // Wait for interval (30 minutes = 1800 seconds)
-            // For testing, use 60 seconds
-            std::thread::sleep(Duration::from_secs(60));
+        let default_interval_secs = 1800; // 30 minutes default (30 * 60)
+        let mut current_interval_secs = default_interval_secs;
+        let mut remaining_secs = current_interval_secs;
 
-            // Show prompt window
-            let _ = show_prompt_window(&app);
+        loop {
+            // Sleep in small increments so we can check for messages
+            std::thread::sleep(Duration::from_secs(1));
+            remaining_secs -= 1;
+
+            // Check for timer control messages
+            match rx.try_recv() {
+                Ok(TimerMessage::CustomInterval(minutes)) => {
+                    // Set custom interval and reset countdown
+                    current_interval_secs = minutes * 60;
+                    remaining_secs = current_interval_secs;
+                }
+                Err(_) => {
+                    // No message, continue
+                }
+            }
+
+            // Show prompt when countdown reaches zero
+            if remaining_secs <= 0 {
+                let _ = show_prompt_window(&app);
+                // Reset to default interval after showing prompt
+                current_interval_secs = default_interval_secs;
+                remaining_secs = current_interval_secs;
+            }
         }
     });
 }
@@ -62,4 +100,12 @@ pub fn close_prompt_window(app: &AppHandle) -> tauri::Result<()> {
         window.close()?;
     }
     Ok(())
+}
+
+pub fn schedule_next_prompt(_app: AppHandle, minutes: u64) {
+    // Send message to the timer thread to reschedule with custom interval
+    let channel = TIMER_CHANNEL.lock().unwrap();
+    if let Some(tx) = channel.as_ref() {
+        let _ = tx.send(TimerMessage::CustomInterval(minutes));
+    }
 }
