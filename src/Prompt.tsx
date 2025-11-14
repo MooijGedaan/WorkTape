@@ -9,6 +9,47 @@ import { Field } from './components/catalyst/fieldset';
 function Prompt() {
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [skipDuration, setSkipDuration] = useState(5); // in minutes
+  const [isHovering, setIsHovering] = useState(false);
+
+  // Format skip duration for display
+  const formatSkipDuration = (minutes: number): string => {
+    if (minutes < 60) {
+      return `Skip ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    } else {
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+
+      if (remainingMinutes === 0) {
+        return `Skip ${hours} hour${hours !== 1 ? 's' : ''}`;
+      } else {
+        return `Skip ${hours}h ${remainingMinutes}m`;
+      }
+    }
+  };
+
+  // Handle scroll wheel to adjust skip duration
+  const handleWheel = (e: React.WheelEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // Prevent page scroll
+
+    const delta = e.deltaY;
+    const increment = 15; // 15-minute steps
+
+    setSkipDuration((prev) => {
+      let newDuration = prev;
+
+      if (delta < 0) {
+        // Scroll up - increase duration
+        newDuration = prev + increment;
+      } else if (delta > 0) {
+        // Scroll down - decrease duration
+        newDuration = prev - increment;
+      }
+
+      // Clamp between 5 and 120 minutes
+      return Math.max(5, Math.min(120, newDuration));
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +83,19 @@ function Prompt() {
       console.log('Emitting work-entry-saved event...');
       await emit('work-entry-saved', { description: description.trim(), timestamp });
 
-      // Close the prompt window
+      // Get the configured interval from database
+      console.log('Fetching prompt interval from settings...');
+      const intervalResult = await db.select<Array<{ value: string }>>(
+        "SELECT value FROM settings WHERE key = 'prompt_interval_minutes'"
+      );
+      const intervalMinutes = intervalResult.length > 0
+        ? parseInt(intervalResult[0].value, 10)
+        : 30; // Default to 30 minutes if not found
+      console.log('Prompt interval:', intervalMinutes);
+
+      // Close the prompt window and schedule next prompt
       console.log('Closing window...');
-      await invoke('close_prompt_after_save');
+      await invoke('close_prompt_after_save', { intervalMinutes });
       console.log('Window closed successfully');
     } catch (error) {
       console.error('Failed to save entry:', error);
@@ -55,9 +106,10 @@ function Prompt() {
 
   const handleSkip = async () => {
     try {
-      await invoke('close_prompt');
+      // Pass skip duration to backend
+      await invoke('skip_prompt', { minutes: skipDuration });
     } catch (error) {
-      console.error('Failed to close prompt:', error);
+      console.error('Failed to skip prompt:', error);
     }
   };
 
@@ -95,10 +147,15 @@ function Prompt() {
           <Button
             type="button"
             onClick={handleSkip}
+            onWheel={handleWheel}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
             disabled={isSubmitting}
             plain
+            className={isHovering ? 'cursor-ns-resize' : ''}
+            title="Scroll to adjust snooze duration"
           >
-            Skip
+            {formatSkipDuration(skipDuration)}
           </Button>
 
           <Button

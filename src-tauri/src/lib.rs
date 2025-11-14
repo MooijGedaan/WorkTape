@@ -1,10 +1,12 @@
 use tauri_plugin_sql::{Migration, MigrationKind};
-use tauri::Manager;
 
 mod prompt;
 
 #[tauri::command]
-fn close_prompt_after_save(app: tauri::AppHandle) -> Result<(), String> {
+fn close_prompt_after_save(app: tauri::AppHandle, interval_minutes: u64) -> Result<(), String> {
+    // Schedule next prompt for configured interval (passed from frontend)
+    prompt::schedule_next_prompt(app.clone(), interval_minutes);
+
     // Close the prompt window after frontend saves to database
     prompt::close_prompt_window(&app)
         .map_err(|e| format!("Failed to close prompt: {}", e))
@@ -17,9 +19,28 @@ fn close_prompt(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn skip_prompt(app: tauri::AppHandle, minutes: u64) -> Result<(), String> {
+    // Close the prompt window
+    prompt::close_prompt_window(&app)
+        .map_err(|e| format!("Failed to close prompt: {}", e))?;
+
+    // Schedule next prompt with custom duration
+    prompt::schedule_next_prompt(app, minutes);
+
+    Ok(())
+}
+
+#[tauri::command]
 fn show_prompt(app: tauri::AppHandle) -> Result<(), String> {
     prompt::show_prompt_window(&app)
         .map_err(|e| format!("Failed to show prompt: {}", e))
+}
+
+#[tauri::command]
+fn set_prompt_interval(app: tauri::AppHandle, minutes: u64) -> Result<(), String> {
+    // Update the timer with the new interval
+    prompt::schedule_next_prompt(app, minutes);
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -35,6 +56,16 @@ pub fn run() {
                 timestamp TEXT NOT NULL
             );",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 2,
+            description: "create settings table",
+            sql: "CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+            INSERT OR IGNORE INTO settings (key, value) VALUES ('prompt_interval_minutes', '30');",
+            kind: MigrationKind::Up,
         }
     ];
 
@@ -48,7 +79,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             close_prompt_after_save,
             close_prompt,
-            show_prompt
+            show_prompt,
+            skip_prompt,
+            set_prompt_interval
         ])
         .setup(|app| {
             // Start periodic prompt timer
