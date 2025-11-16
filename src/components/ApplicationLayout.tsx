@@ -2,7 +2,6 @@ import { SidebarLayout } from './catalyst/sidebar-layout';
 import {
   Sidebar,
   SidebarBody,
-  SidebarHeader,
   SidebarItem,
   SidebarLabel,
   SidebarSection,

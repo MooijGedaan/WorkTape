@@ -79,6 +79,17 @@ pub fn run() {
             );
             INSERT OR IGNORE INTO settings (key, value) VALUES ('prompt_interval_minutes', '30');",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 3,
+            description: "create ai_summaries table",
+            sql: "CREATE TABLE IF NOT EXISTS ai_summaries (
+                date TEXT PRIMARY KEY,
+                summary TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );",
+            kind: MigrationKind::Up,
         }
     ];
 

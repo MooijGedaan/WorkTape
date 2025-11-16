@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { Button } from '../components/catalyst/button';
@@ -11,6 +11,13 @@ async function getDatabase() {
   return db ?? await Database.load("sqlite:workrecall.db");
 }
 
+interface AISummary {
+  date: string;
+  summary: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export function AISummaryView() {
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -19,6 +26,61 @@ export function AISummaryView() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  const [summaryExists, setSummaryExists] = useState<boolean>(false);
+
+  const loadSummary = async () => {
+    try {
+      console.log('Loading summary for date:', selectedDate);
+      const database = await getDatabase();
+      const result = await database.select<AISummary[]>(
+        "SELECT date, summary, created_at, updated_at FROM ai_summaries WHERE date = ?",
+        [selectedDate]
+      );
+
+      console.log('Summary query result:', result);
+
+      if (result.length > 0) {
+        console.log('Summary found, setting state');
+        setSummary(result[0].summary);
+        setSummaryExists(true);
+      } else {
+        console.log('No summary found for this date');
+        setSummary('');
+        setSummaryExists(false);
+      }
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load summary:', err);
+      setSummary('');
+      setSummaryExists(false);
+    }
+  };
+
+  // Load existing summary when component mounts or date changes
+  useEffect(() => {
+    loadSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
+
+  const saveSummary = async (summaryText: string) => {
+    try {
+      console.log('Saving summary for date:', selectedDate);
+      const database = await getDatabase();
+      const now = new Date().toISOString();
+
+      // Use INSERT OR REPLACE to either insert new or update existing
+      await database.execute(
+        "INSERT OR REPLACE INTO ai_summaries (date, summary, created_at, updated_at) VALUES (?, ?, COALESCE((SELECT created_at FROM ai_summaries WHERE date = ?), ?), ?)",
+        [selectedDate, summaryText, selectedDate, now, now]
+      );
+
+      console.log('Summary saved successfully');
+      setSummaryExists(true);
+    } catch (err) {
+      console.error('Failed to save summary:', err);
+      setError('Failed to save summary to database');
+    }
+  };
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -44,6 +106,12 @@ export function AISummaryView() {
         return;
       }
 
+      if (entries.length < 2) {
+        setError(`At least 2 work entries are required to generate a summary. You only have ${entries.length} entry for ${formatDate(selectedDate)}.`);
+        setIsLoading(false);
+        return;
+      }
+
       // Convert entries to format expected by backend: Vec<(String, String)>
       const entryTuples: [string, string][] = entries.map(entry => [
         entry.description,
@@ -60,6 +128,9 @@ export function AISummaryView() {
 
       console.log('Summary generated successfully');
       setSummary(generatedSummary);
+
+      // Save summary to database
+      await saveSummary(generatedSummary);
     } catch (err) {
       console.error('Failed to generate summary:', err);
       setError(String(err));
@@ -81,22 +152,22 @@ export function AISummaryView() {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(e.target.value);
-    setSummary(''); // Clear summary when date changes
     setError(null);
+    setCopySuccess(false);
   };
 
   const setToday = () => {
     setSelectedDate(new Date().toISOString().split('T')[0]);
-    setSummary('');
     setError(null);
+    setCopySuccess(false);
   };
 
   const setYesterday = () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     setSelectedDate(yesterday.toISOString().split('T')[0]);
-    setSummary('');
     setError(null);
+    setCopySuccess(false);
   };
 
   const formatDate = (dateStr: string): string => {
@@ -145,7 +216,7 @@ export function AISummaryView() {
           color="blue"
           className="mb-6"
         >
-          {isLoading ? 'Generating Summary...' : 'Generate Summary'}
+          {isLoading ? 'Generating Summary...' : (summaryExists ? 'Overwrite Summary' : 'Generate Summary')}
         </Button>
 
         {/* Error Display */}
@@ -171,7 +242,7 @@ export function AISummaryView() {
         <div className="flex-1 flex flex-col min-h-0 w-full mt-4">
           <div className="flex items-center justify-between mb-3">
             <Heading level={2}>
-              Summary for {formatDate(selectedDate)}
+              AI Summary of {formatDate(selectedDate)}
             </Heading>
             <Button
               onClick={handleCopy}

@@ -140,17 +140,21 @@ export function WorkLogView() {
         <form onSubmit={handleSubmit} className="mb-8">
           <Field>
             <Label>What are you working on?</Label>
-            <Input
-              type="text"
-              value={taskDescription}
-              onChange={(e) => setTaskDescription(e.target.value)}
-              placeholder="Enter task description..."
-              disabled={isLoading}
-            />
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                  placeholder="Enter task description..."
+                  disabled={isLoading}
+                />
+              </div>
+              <Button type="submit" disabled={isLoading} color="blue">
+                {isLoading ? "Adding..." : "Add Entry"}
+              </Button>
+            </div>
           </Field>
-          <Button type="submit" disabled={isLoading} className="mt-3" color="blue">
-            {isLoading ? "Adding..." : "Add Entry"}
-          </Button>
         </form>
       </div>
 
