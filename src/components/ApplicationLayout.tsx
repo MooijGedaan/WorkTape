@@ -8,6 +8,7 @@ import {
   SidebarSection,
   SidebarSpacer,
 } from './catalyst/sidebar';
+import { TitleBar } from './TitleBar';
 import { useNavigation } from '../hooks/useNavigation.tsx';
 import {
   HomeIcon,
@@ -25,23 +26,6 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
     <SidebarLayout
       sidebar={
         <Sidebar>
-          {/* Sidebar Header */}
-          <SidebarHeader>
-            <div className="flex items-center gap-3 px-2">
-              {/* App Logo/Icon */}
-              <div className="flex size-10 items-center justify-center rounded-lg bg-blue-500">
-                <span className="text-lg font-bold text-white">W</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-zinc-950 dark:text-white">
-                  WorkRecall
-                </span>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Activity Logger
-                </span>
-              </div>
-            </div>
-          </SidebarHeader>
 
           {/* Sidebar Body - Navigation */}
           <SidebarBody>
@@ -109,8 +93,15 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
         </Sidebar>
       }
     >
-      {/* Main Content Area */}
-      {children}
+      {/* Title Bar */}
+      <TitleBar />
+
+      {/* Main Content Area with padding */}
+      <div className="flex-1 flex flex-col p-6 min-h-0 overflow-auto">
+        <div className="mx-auto max-w-6xl w-full flex-1 flex flex-col min-h-0">
+          {children}
+        </div>
+      </div>
     </SidebarLayout>
   );
 }

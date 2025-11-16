@@ -1,10 +1,8 @@
 'use client'
 
-import * as Headless from '@headlessui/react'
 import clsx from 'clsx'
 import { LayoutGroup, motion } from 'motion/react'
 import React, { forwardRef, useId } from 'react'
-import { Link } from './link'
 
 export function Sidebar({ className, ...props }: React.ComponentPropsWithoutRef<'nav'>) {
   return <nav {...props} className={clsx(className, 'flex h-full min-h-0 flex-col')} />
@@ -16,7 +14,7 @@ export function SidebarHeader({ className, ...props }: React.ComponentPropsWitho
       {...props}
       className={clsx(
         className,
-        'flex flex-col border-b border-zinc-950/5 p-4 dark:border-white/5 [&>[data-slot=section]+[data-slot=section]]:mt-2.5'
+        'flex flex-col border-b border-zinc-950/5 h-8 dark:border-white/5 [&>[data-slot=section]+[data-slot=section]]:mt-2.5'
       )}
     />
   )
@@ -76,9 +74,10 @@ export const SidebarItem = forwardRef(function SidebarItem(
     className,
     children,
     ...props
-  }: { current?: boolean; className?: string; children: React.ReactNode } & (
-    | ({ href?: string } & Omit<Headless.ButtonProps, 'as' | 'className'>)
-  ),
+  }: { current?: boolean; className?: string; children: React.ReactNode } & Omit<
+    React.ComponentPropsWithoutRef<'a'>,
+    'className'
+  >,
   ref: React.ForwardedRef<HTMLAnchorElement>
 ) {
   let classes = clsx(
@@ -111,16 +110,15 @@ export const SidebarItem = forwardRef(function SidebarItem(
           className="absolute inset-y-2 -left-4 w-0.5 rounded-full bg-zinc-950 dark:bg-white"
         />
       )}
-      <Headless.CloseButton
-        as={typeof props.href === 'string' ? Link : 'a'}
+      <a
         {...props}
         href={props.href || '#'}
         className={classes}
         data-current={current ? 'true' : undefined}
-        ref={ref as React.ForwardedRef<HTMLAnchorElement>}
+        ref={ref}
       >
         {children}
-      </Headless.CloseButton>
+      </a>
     </span>
   )
 })

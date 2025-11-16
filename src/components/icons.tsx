@@ -8,4 +8,6 @@ export {
   ArrowDownTrayIcon,
   SparklesIcon,
   QuestionMarkCircleIcon,
+  MinusIcon,
+  XMarkIcon,
 } from '@heroicons/react/20/solid';

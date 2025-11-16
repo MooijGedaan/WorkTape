@@ -62,10 +62,16 @@ export function SidebarLayout({
         {sidebar}
       </div>
 
-      {/* Resize handle */}
+      {/* Resize handle - positioned between sidebar and content */}
       <div
+        role="separator"
+        aria-label="Resize sidebar"
+        aria-valuenow={sidebarWidth}
+        aria-valuemin={MIN_WIDTH_PX}
+        aria-valuemax={MAX_WIDTH_PX}
+        tabIndex={0}
         className="fixed inset-y-0 z-10 w-1 cursor-col-resize hover:bg-blue-500/50 active:bg-blue-500 transition-colors"
-        style={{ left: `${sidebarWidth}px` }}
+        style={{ left: `${sidebarWidth + 6}px` }}
         onMouseDown={handleMouseDown}
       >
         {/* Wider hover target for better UX */}
@@ -74,11 +80,11 @@ export function SidebarLayout({
 
       {/* Content */}
       <main
-        className="flex flex-1 flex-col pb-2 pt-2 pr-2 min-h-0"
+        className="flex flex-1 flex-col min-h-0"
         style={{ paddingLeft: `${sidebarWidth}px` }}
       >
-        <div className="flex-1 flex flex-col p-6 rounded-lg bg-white shadow-xs ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10 min-h-0 overflow-hidden">
-          <div className="mx-auto max-w-6xl w-full flex-1 flex flex-col min-h-0">{children}</div>
+        <div className="flex-1 flex flex-col rounded-lg bg-white shadow-xs ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10 min-h-0 overflow-hidden m-2">
+          {children}
         </div>
       </main>
     </div>
