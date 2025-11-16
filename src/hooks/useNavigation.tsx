@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 
-export type View = 'home' | 'work-log' | 'settings' | 'export';
+export type View = 'home' | 'work-log' | 'ai-summary' | 'settings' | 'export';
 
 interface NavigationContext {
   currentView: View;
@@ -16,7 +16,7 @@ const NavigationContext = createContext<NavigationContext | null>(null);
 function getInitialView(): View {
   // Get view from URL hash, default to 'work-log'
   const hash = window.location.hash.slice(1); // Remove '#' prefix
-  const validViews: View[] = ['home', 'work-log', 'settings', 'export'];
+  const validViews: View[] = ['home', 'work-log', 'ai-summary', 'settings', 'export'];
   return validViews.includes(hash as View) ? (hash as View) : 'work-log';
 }
 
@@ -27,7 +27,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
-      const validViews: View[] = ['home', 'work-log', 'settings', 'export'];
+      const validViews: View[] = ['home', 'work-log', 'ai-summary', 'settings', 'export'];
       if (validViews.includes(hash as View)) {
         setCurrentView(hash as View);
       }

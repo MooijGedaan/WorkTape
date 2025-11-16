@@ -64,6 +64,14 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               </SidebarItem>
 
               <SidebarItem
+                onClick={() => navigate('ai-summary')}
+                current={currentView === 'ai-summary'}
+              >
+                <SparklesIcon />
+                <SidebarLabel>AI Summary</SidebarLabel>
+              </SidebarItem>
+
+              <SidebarItem
                 onClick={() => navigate('settings')}
                 current={currentView === 'settings'}
               >
@@ -88,13 +96,6 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               <SidebarItem onClick={() => alert('Help & Support coming soon!')}>
                 <QuestionMarkCircleIcon />
                 <SidebarLabel>Help & Support</SidebarLabel>
-              </SidebarItem>
-
-              <SidebarItem
-                onClick={() => alert('Upgrade to Premium coming soon!')}
-              >
-                <SparklesIcon />
-                <SidebarLabel>Upgrade to Premium</SidebarLabel>
               </SidebarItem>
             </SidebarSection>
           </SidebarBody>

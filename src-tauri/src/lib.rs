@@ -1,6 +1,7 @@
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 mod prompt;
+mod openai;
 
 #[tauri::command]
 fn close_prompt_after_save(app: tauri::AppHandle, interval_minutes: u64) -> Result<(), String> {
@@ -43,8 +44,20 @@ fn set_prompt_interval(app: tauri::AppHandle, minutes: u64) -> Result<(), String
     Ok(())
 }
 
+#[tauri::command]
+async fn generate_daily_summary(
+    entries: Vec<(String, String)>,
+    date: String,
+) -> Result<String, String> {
+    // Call the OpenAI service to generate summary
+    openai::generate_summary(entries, &date).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Load environment variables from .env file
+    dotenv::dotenv().ok();
+
     // Define database migrations
     let migrations = vec![
         Migration {
@@ -81,7 +94,8 @@ pub fn run() {
             close_prompt,
             show_prompt,
             skip_prompt,
-            set_prompt_interval
+            set_prompt_interval,
+            generate_daily_summary
         ])
         .setup(|app| {
             // Start periodic prompt timer
