@@ -48,7 +48,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
             {/* Primary Navigation */}
             <SidebarSection>
               <SidebarItem
-                onClick={() => navigate('home')}
+                onClick={(e) => { e.preventDefault(); navigate('home'); }}
                 current={currentView === 'home'}
               >
                 <HomeIcon />
@@ -56,7 +56,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               </SidebarItem>
 
               <SidebarItem
-                onClick={() => navigate('work-log')}
+                onClick={(e) => { e.preventDefault(); navigate('work-log'); }}
                 current={currentView === 'work-log'}
               >
                 <DocumentIcon />
@@ -64,7 +64,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               </SidebarItem>
 
               <SidebarItem
-                onClick={() => navigate('ai-summary')}
+                onClick={(e) => { e.preventDefault(); navigate('ai-summary'); }}
                 current={currentView === 'ai-summary'}
               >
                 <SparklesIcon />
@@ -72,19 +72,19 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               </SidebarItem>
 
               <SidebarItem
-                onClick={() => navigate('settings')}
-                current={currentView === 'settings'}
-              >
-                <CogIcon />
-                <SidebarLabel>Settings</SidebarLabel>
-              </SidebarItem>
-
-              <SidebarItem
-                onClick={() => navigate('export')}
+                onClick={(e) => { e.preventDefault(); navigate('export'); }}
                 current={currentView === 'export'}
               >
                 <ArrowDownTrayIcon />
                 <SidebarLabel>Export</SidebarLabel>
+              </SidebarItem>
+
+              <SidebarItem
+                onClick={(e) => { e.preventDefault(); navigate('settings'); }}
+                current={currentView === 'settings'}
+              >
+                <CogIcon />
+                <SidebarLabel>Settings</SidebarLabel>
               </SidebarItem>
             </SidebarSection>
 
@@ -93,7 +93,9 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
 
             {/* Secondary Navigation */}
             <SidebarSection>
-              <SidebarItem onClick={() => alert('Help & Support coming soon!')}>
+              <SidebarItem
+                onClick={(e) => { e.preventDefault(); alert('Help & Support coming soon!'); }}
+              >
                 <QuestionMarkCircleIcon />
                 <SidebarLabel>Help & Support</SidebarLabel>
               </SidebarItem>

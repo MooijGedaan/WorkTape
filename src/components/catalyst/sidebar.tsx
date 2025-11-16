@@ -4,7 +4,6 @@ import * as Headless from '@headlessui/react'
 import clsx from 'clsx'
 import { LayoutGroup, motion } from 'motion/react'
 import React, { forwardRef, useId } from 'react'
-import { TouchTarget } from './button'
 import { Link } from './link'
 
 export function Sidebar({ className, ...props }: React.ComponentPropsWithoutRef<'nav'>) {
@@ -78,14 +77,13 @@ export const SidebarItem = forwardRef(function SidebarItem(
     children,
     ...props
   }: { current?: boolean; className?: string; children: React.ReactNode } & (
-    | ({ href?: never } & Omit<Headless.ButtonProps, 'as' | 'className'>)
-    | ({ href: string } & Omit<Headless.ButtonProps<typeof Link>, 'as' | 'className'>)
+    | ({ href?: string } & Omit<Headless.ButtonProps, 'as' | 'className'>)
   ),
-  ref: React.ForwardedRef<HTMLAnchorElement | HTMLButtonElement>
+  ref: React.ForwardedRef<HTMLAnchorElement>
 ) {
   let classes = clsx(
     // Base
-    'flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-base/6 font-medium text-zinc-950 sm:py-2 sm:text-sm/5',
+    'flex w-full items-center gap-3 px-2 py-2.5 text-left text-base/6 font-medium text-zinc-950 sm:py-2 sm:text-sm/5',
     // Leading icon/icon-only
     '*:data-[slot=icon]:size-6 *:data-[slot=icon]:shrink-0 *:data-[slot=icon]:fill-zinc-500 sm:*:data-[slot=icon]:size-5',
     // Trailing icon (down chevron or similar)
@@ -93,15 +91,15 @@ export const SidebarItem = forwardRef(function SidebarItem(
     // Avatar
     '*:data-[slot=avatar]:-m-0.5 *:data-[slot=avatar]:size-7 sm:*:data-[slot=avatar]:size-6',
     // Hover
-    'data-hover:bg-zinc-950/5 data-hover:*:data-[slot=icon]:fill-zinc-950',
+    'data-hover:*:data-[slot=icon]:fill-zinc-950',
     // Active
-    'data-active:bg-zinc-950/5 data-active:*:data-[slot=icon]:fill-zinc-950',
+    'data-active:*:data-[slot=icon]:fill-zinc-950',
     // Current
     'data-current:*:data-[slot=icon]:fill-zinc-950',
     // Dark mode
     'dark:text-white dark:*:data-[slot=icon]:fill-zinc-400',
-    'dark:data-hover:bg-white/5 dark:data-hover:*:data-[slot=icon]:fill-white',
-    'dark:data-active:bg-white/5 dark:data-active:*:data-[slot=icon]:fill-white',
+    'dark:data-hover:*:data-[slot=icon]:fill-white',
+    'dark:data-active:*:data-[slot=icon]:fill-white',
     'dark:data-current:*:data-[slot=icon]:fill-white'
   )
 
@@ -113,26 +111,16 @@ export const SidebarItem = forwardRef(function SidebarItem(
           className="absolute inset-y-2 -left-4 w-0.5 rounded-full bg-zinc-950 dark:bg-white"
         />
       )}
-      {typeof props.href === 'string' ? (
-        <Headless.CloseButton
-          as={Link}
-          {...props}
-          className={classes}
-          data-current={current ? 'true' : undefined}
-          ref={ref}
-        >
-          <TouchTarget>{children}</TouchTarget>
-        </Headless.CloseButton>
-      ) : (
-        <Headless.Button
-          {...props}
-          className={clsx('cursor-default', classes)}
-          data-current={current ? 'true' : undefined}
-          ref={ref}
-        >
-          <TouchTarget>{children}</TouchTarget>
-        </Headless.Button>
-      )}
+      <Headless.CloseButton
+        as={typeof props.href === 'string' ? Link : 'a'}
+        {...props}
+        href={props.href || '#'}
+        className={classes}
+        data-current={current ? 'true' : undefined}
+        ref={ref as React.ForwardedRef<HTMLAnchorElement>}
+      >
+        {children}
+      </Headless.CloseButton>
     </span>
   )
 })
