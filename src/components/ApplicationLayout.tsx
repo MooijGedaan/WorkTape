@@ -17,6 +17,7 @@ import {
   ArrowDownTrayIcon,
   SparklesIcon,
   QuestionMarkCircleIcon,
+  CameraIcon,
 } from './icons';
 
 export function ApplicationLayout({ children }: { children: React.ReactNode }) {
@@ -71,6 +72,14 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               >
                 <CogIcon />
                 <SidebarLabel>{t('navigation.settings')}</SidebarLabel>
+              </SidebarItem>
+
+              <SidebarItem
+                onClick={(e) => { e.preventDefault(); navigate('screen-capture-test'); }}
+                current={currentView === 'screen-capture-test'}
+              >
+                <CameraIcon />
+                <SidebarLabel>Screen Capture Test</SidebarLabel>
               </SidebarItem>
             </SidebarSection>
 

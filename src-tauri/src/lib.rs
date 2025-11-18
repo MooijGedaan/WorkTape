@@ -2,6 +2,7 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 
 mod prompt;
 mod openai;
+mod screenshot;
 
 #[tauri::command]
 fn close_prompt_after_save(app: tauri::AppHandle, interval_minutes: u64) -> Result<(), String> {
@@ -51,6 +52,41 @@ async fn generate_daily_summary(
 ) -> Result<String, String> {
     // Call the OpenAI service to generate summary
     openai::generate_summary(entries, &date).await
+}
+
+#[tauri::command]
+fn test_screenshot_capture() -> Result<Vec<screenshot::ScreenshotData>, String> {
+    // Check permissions (mainly for macOS)
+    if !screenshot::check_screen_recording_permission() {
+        return Err(
+            "Screen Recording permission required. Please grant permission in System Settings → Privacy & Security → Screen Recording".to_string()
+        );
+    }
+
+    // Capture all monitors
+    screenshot::capture_all_monitors()
+}
+
+#[tauri::command]
+async fn capture_and_analyze_screen() -> Result<String, String> {
+    // Check permissions (mainly for macOS)
+    if !screenshot::check_screen_recording_permission() {
+        return Err(
+            "Screen Recording permission required. Please grant permission in System Settings → Privacy & Security → Screen Recording".to_string()
+        );
+    }
+
+    // Capture all monitors
+    let screenshots = screenshot::capture_all_monitors()?;
+
+    // Extract base64 image data
+    let base64_images: Vec<String> = screenshots
+        .into_iter()
+        .map(|s| s.image_base64)
+        .collect();
+
+    // Analyze with OpenAI GPT-4o vision
+    openai::analyze_screenshots(base64_images).await
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -106,7 +142,9 @@ pub fn run() {
             show_prompt,
             skip_prompt,
             set_prompt_interval,
-            generate_daily_summary
+            generate_daily_summary,
+            test_screenshot_capture,
+            capture_and_analyze_screen
         ])
         .setup(|app| {
             // Start periodic prompt timer

@@ -4,6 +4,7 @@ import { WorkLogView } from '../views/WorkLogView';
 import { SettingsView } from '../views/SettingsView';
 import { ExportView } from '../views/ExportView';
 import { AISummaryView } from '../views/AISummaryView';
+import { ScreenCaptureTestView } from '../views/ScreenCaptureTestView';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function ViewRouter() {
@@ -15,6 +16,7 @@ export function ViewRouter() {
     'ai-summary': <AISummaryView />,
     'settings': <SettingsView />,
     'export': <ExportView />,
+    'screen-capture-test': <ScreenCaptureTestView />,
   };
 
   return (

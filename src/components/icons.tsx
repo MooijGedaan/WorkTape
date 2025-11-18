@@ -10,4 +10,5 @@ export {
   QuestionMarkCircleIcon,
   MinusIcon,
   XMarkIcon,
+  CameraIcon,
 } from '@heroicons/react/20/solid';
