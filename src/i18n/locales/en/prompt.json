@@ -1,0 +1,14 @@
+{
+  "title": "What are you working on?",
+  "placeholder": "Describe what you're currently doing...",
+  "submit": "Submit",
+  "submitting": "Saving...",
+  "skip": {
+    "minutes": "Skip {{count}} minute",
+    "minutes_plural": "Skip {{count}} minutes",
+    "hours": "Skip {{count}} hour",
+    "hours_plural": "Skip {{count}} hours",
+    "hoursAndMinutes": "Skip {{hours}}h {{minutes}}m",
+    "scrollToAdjust": "Scroll to adjust snooze duration"
+  }
+}

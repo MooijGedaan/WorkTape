@@ -1,0 +1,23 @@
+{
+  "title": "Welcome to WorkRecall",
+  "subtitle": "Track your work activities, build a comprehensive log, and leverage AI-powered summaries to showcase your accomplishments.",
+  "stats": {
+    "totalEntries": {
+      "label": "Total Entries",
+      "description": "All work log entries"
+    },
+    "thisWeek": {
+      "label": "This Week",
+      "description": "Entries in the last 7 days"
+    },
+    "streak": {
+      "label": "Streak",
+      "description": "Consecutive days logging",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days"
+    }
+  },
+  "actions": {
+    "goToWorkLog": "Go to Work Log"
+  }
+}

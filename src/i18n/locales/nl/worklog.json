@@ -1,0 +1,25 @@
+{
+  "title": "Werklogboek",
+  "subtitle": "Houd uw dagelijkse werkactiviteiten bij",
+  "form": {
+    "label": "Waar werk je aan?",
+    "placeholder": "Voer taakbeschrijving in...",
+    "submit": "Item toevoegen",
+    "submitting": "Toevoegen..."
+  },
+  "list": {
+    "title": "Werklogboek ({{count}} items)",
+    "empty": "Nog geen items. Begin hierboven met het loggen van uw werk!",
+    "headers": {
+      "time": "Tijd",
+      "description": "Beschrijving",
+      "delete": "Verwijderen"
+    }
+  },
+  "errors": {
+    "loadFailed": "Laden van items mislukt: {{error}}",
+    "addFailed": "Toevoegen van item mislukt: {{error}}",
+    "deleteFailed": "Verwijderen van item mislukt: {{error}}",
+    "emptyDescription": "Voer een taakbeschrijving in"
+  }
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import Database from '@tauri-apps/plugin-sql';
 import { Heading } from '../components/catalyst/heading';
@@ -7,8 +8,10 @@ import { Divider } from '../components/catalyst/divider';
 import { Field, Label, Description } from '../components/catalyst/fieldset';
 import { Input } from '../components/catalyst/input';
 import { Button } from '../components/catalyst/button';
+import { LanguageSelector } from '../components/LanguageSelector';
 
 export function SettingsView() {
+  const { t } = useTranslation(['settings', 'common']);
   const [promptInterval, setPromptInterval] = useState<number>(30);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,7 +47,7 @@ export function SettingsView() {
 
       // Validate input
       if (promptInterval < 1 || promptInterval > 1440) {
-        setSaveMessage('Please enter a value between 1 and 1440 minutes (24 hours)');
+        setSaveMessage(t('settings:promptFrequency.validationError'));
         return;
       }
 
@@ -58,7 +61,7 @@ export function SettingsView() {
       // Update the timer interval in the background process
       await invoke('set_prompt_interval', { minutes: promptInterval });
 
-      setSaveMessage('Settings saved successfully!');
+      setSaveMessage(t('settings:promptFrequency.saveSuccess'));
 
       // Clear success message after 3 seconds
       setTimeout(() => setSaveMessage(null), 3000);
@@ -72,19 +75,21 @@ export function SettingsView() {
 
   return (
     <div className="max-w-2xl scrollable h-full">
-      <Heading>Settings</Heading>
+      <Heading>{t('settings:title')}</Heading>
       <Text className="mt-2 text-zinc-600 dark:text-zinc-400">
-        Manage your WorkRecall preferences and account settings.
+        {t('settings:subtitle')}
       </Text>
 
       <Divider className="my-6" />
 
       <div className="space-y-6">
+        <LanguageSelector />
+
         <div>
           <Field>
-            <Label>Prompt Frequency</Label>
+            <Label>{t('settings:promptFrequency.label')}</Label>
             <Description>
-              How often (in minutes) should WorkRecall prompt you to log your work?
+              {t('settings:promptFrequency.description')}
             </Description>
             <div className="flex gap-3 items-end mt-2">
               <div className="flex-1 max-w-xs">
@@ -102,44 +107,44 @@ export function SettingsView() {
                 disabled={isLoading || isSaving}
                 color="blue"
               >
-                {isSaving ? 'Saving...' : 'Save'}
+                {isSaving ? t('common:status.saving') : t('common:actions.save')}
               </Button>
             </div>
             {saveMessage && (
-              <Text className={`mt-2 text-sm ${saveMessage.includes('Error') ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+              <Text className={`mt-2 text-sm ${saveMessage.includes(t('common:status.error')) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                 {saveMessage}
               </Text>
             )}
             <Text className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-              Recommended: 30-60 minutes. Range: 1-1440 minutes (24 hours).
+              {t('settings:promptFrequency.recommendation')}
             </Text>
           </Field>
         </div>
 
         <div>
           <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
-            Notifications
+            {t('settings:sections.notifications.title')}
           </h3>
           <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Coming soon: Manage notification preferences.
+            {t('settings:sections.notifications.comingSoon')}
           </Text>
         </div>
 
         <div>
           <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
-            Dark Mode
+            {t('settings:sections.darkMode.title')}
           </h3>
           <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Coming soon: Toggle dark mode manually. Currently follows system preferences.
+            {t('settings:sections.darkMode.comingSoon')}
           </Text>
         </div>
 
         <div>
           <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
-            Database
+            {t('settings:sections.database.title')}
           </h3>
           <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Coming soon: Database backup and export options.
+            {t('settings:sections.database.comingSoon')}
           </Text>
         </div>
       </div>

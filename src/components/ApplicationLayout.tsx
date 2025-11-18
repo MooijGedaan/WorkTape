@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { SidebarLayout } from './catalyst/sidebar-layout';
 import {
   Sidebar,
@@ -19,10 +20,12 @@ import {
 } from './icons';
 
 export function ApplicationLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation('common');
   const { currentView, navigate } = useNavigation();
 
   return (
     <SidebarLayout
+      titleBar={<TitleBar />}
       sidebar={
         <Sidebar>
 
@@ -35,7 +38,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
                 current={currentView === 'home'}
               >
                 <HomeIcon />
-                <SidebarLabel>Home</SidebarLabel>
+                <SidebarLabel>{t('navigation.home')}</SidebarLabel>
               </SidebarItem>
 
               <SidebarItem
@@ -43,7 +46,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
                 current={currentView === 'work-log'}
               >
                 <DocumentIcon />
-                <SidebarLabel>Work Log</SidebarLabel>
+                <SidebarLabel>{t('navigation.workLog')}</SidebarLabel>
               </SidebarItem>
 
               <SidebarItem
@@ -51,7 +54,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
                 current={currentView === 'ai-summary'}
               >
                 <SparklesIcon />
-                <SidebarLabel>AI Summary</SidebarLabel>
+                <SidebarLabel>{t('navigation.aiSummary')}</SidebarLabel>
               </SidebarItem>
 
               <SidebarItem
@@ -59,7 +62,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
                 current={currentView === 'export'}
               >
                 <ArrowDownTrayIcon />
-                <SidebarLabel>Export</SidebarLabel>
+                <SidebarLabel>{t('navigation.export')}</SidebarLabel>
               </SidebarItem>
 
               <SidebarItem
@@ -67,7 +70,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
                 current={currentView === 'settings'}
               >
                 <CogIcon />
-                <SidebarLabel>Settings</SidebarLabel>
+                <SidebarLabel>{t('navigation.settings')}</SidebarLabel>
               </SidebarItem>
             </SidebarSection>
 
@@ -80,7 +83,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
                 onClick={(e) => { e.preventDefault(); alert('Help & Support coming soon!'); }}
               >
                 <QuestionMarkCircleIcon />
-                <SidebarLabel>Help & Support</SidebarLabel>
+                <SidebarLabel>{t('navigation.help')}</SidebarLabel>
               </SidebarItem>
             </SidebarSection>
           </SidebarBody>
@@ -92,11 +95,8 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
         </Sidebar>
       }
     >
-      {/* Title Bar */}
-      <TitleBar />
-
       {/* Main Content Area with padding */}
-      <div className="flex-1 flex flex-col p-6 min-h-0 overflow-auto">
+      <div className="flex-1 flex flex-col p-6 min-h-0">
         <div className="mx-auto max-w-6xl w-full flex-1 flex flex-col min-h-0">
           {children}
         </div>

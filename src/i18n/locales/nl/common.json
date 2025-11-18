@@ -1,0 +1,41 @@
+{
+  "appName": "WorkRecall",
+  "navigation": {
+    "home": "Home",
+    "workLog": "Werklogboek",
+    "aiSummary": "AI Samenvatting",
+    "export": "Exporteren",
+    "settings": "Instellingen",
+    "help": "Help"
+  },
+  "actions": {
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "close": "Sluiten",
+    "undo": "Ongedaan maken",
+    "confirm": "Bevestigen",
+    "back": "Terug",
+    "next": "Volgende",
+    "copy": "Kopiëren naar klembord",
+    "copied": "Gekopieerd!"
+  },
+  "status": {
+    "loading": "Laden...",
+    "saving": "Opslaan...",
+    "saved": "Opgeslagen",
+    "error": "Fout",
+    "success": "Succes"
+  },
+  "dateActions": {
+    "today": "Vandaag",
+    "yesterday": "Gisteren"
+  },
+  "premium": {
+    "badge": "Premium",
+    "title": "Premium Functie",
+    "upgrade": "Upgrade naar Premium",
+    "learnMore": "Meer informatie"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Work Log",
+  "subtitle": "Track your daily work activities",
+  "form": {
+    "label": "What are you working on?",
+    "placeholder": "Enter task description...",
+    "submit": "Add Entry",
+    "submitting": "Adding..."
+  },
+  "list": {
+    "title": "Work Log ({{count}} entries)",
+    "empty": "No entries yet. Start logging your work above!",
+    "headers": {
+      "time": "Time",
+      "description": "Description",
+      "delete": "Delete"
+    }
+  },
+  "errors": {
+    "loadFailed": "Failed to load entries: {{error}}",
+    "addFailed": "Failed to add entry: {{error}}",
+    "deleteFailed": "Failed to delete entry: {{error}}",
+    "emptyDescription": "Please enter a task description"
+  }
+}

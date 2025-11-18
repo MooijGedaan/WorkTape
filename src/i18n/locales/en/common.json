@@ -1,0 +1,41 @@
+{
+  "appName": "WorkRecall",
+  "navigation": {
+    "home": "Home",
+    "workLog": "Work Log",
+    "aiSummary": "AI Summary",
+    "export": "Export",
+    "settings": "Settings",
+    "help": "Help"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "undo": "Undo",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "copy": "Copy to Clipboard",
+    "copied": "Copied!"
+  },
+  "status": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "error": "Error",
+    "success": "Success"
+  },
+  "dateActions": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "premium": {
+    "badge": "Premium",
+    "title": "Premium Feature",
+    "upgrade": "Upgrade to Premium",
+    "learnMore": "Learn More"
+  }
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import Database from '@tauri-apps/plugin-sql';
@@ -7,6 +8,7 @@ import { Textarea } from './components/catalyst/textarea';
 import { Field } from './components/catalyst/fieldset';
 
 function Prompt() {
+  const { t } = useTranslation('prompt');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [skipDuration, setSkipDuration] = useState(5); // in minutes
@@ -15,15 +17,15 @@ function Prompt() {
   // Format skip duration for display
   const formatSkipDuration = (minutes: number): string => {
     if (minutes < 60) {
-      return `Skip ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+      return t('skip.minutes', { count: minutes });
     } else {
       const hours = Math.floor(minutes / 60);
       const remainingMinutes = minutes % 60;
 
       if (remainingMinutes === 0) {
-        return `Skip ${hours} hour${hours !== 1 ? 's' : ''}`;
+        return t('skip.hours', { count: hours });
       } else {
-        return `Skip ${hours}h ${remainingMinutes}m`;
+        return t('skip.hoursAndMinutes', { hours, minutes: remainingMinutes });
       }
     }
   };
@@ -126,7 +128,7 @@ function Prompt() {
   return (
     <div className="h-screen flex flex-col p-5 bg-zinc-50 dark:bg-zinc-900 box-border overflow-hidden">
       <h2 className="m-0 mb-4 text-base font-semibold text-zinc-950 dark:text-white">
-        What are you working on?
+        {t('title')}
       </h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1">
@@ -135,7 +137,7 @@ function Prompt() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe what you're currently doing..."
+            placeholder={t('placeholder')}
             autoFocus
             disabled={isSubmitting}
             resizable={false}
@@ -153,7 +155,7 @@ function Prompt() {
             disabled={isSubmitting}
             plain
             className={isHovering ? 'cursor-ns-resize' : ''}
-            title="Scroll to adjust snooze duration"
+            title={t('skip.scrollToAdjust')}
           >
             {formatSkipDuration(skipDuration)}
           </Button>
@@ -163,7 +165,7 @@ function Prompt() {
             disabled={!description.trim() || isSubmitting}
             color="blue"
           >
-            {isSubmitting ? 'Saving...' : 'Submit'}
+            {isSubmitting ? t('submitting') : t('submit')}
           </Button>
         </div>
       </form>

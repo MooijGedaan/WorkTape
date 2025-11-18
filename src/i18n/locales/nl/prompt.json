@@ -1,0 +1,14 @@
+{
+  "title": "Waar werk je aan?",
+  "placeholder": "Beschrijf waar je momenteel mee bezig bent...",
+  "submit": "Versturen",
+  "submitting": "Opslaan...",
+  "skip": {
+    "minutes": "Sla {{count}} minuut over",
+    "minutes_plural": "Sla {{count}} minuten over",
+    "hours": "Sla {{count}} uur over",
+    "hours_plural": "Sla {{count}} uur over",
+    "hoursAndMinutes": "Sla {{hours}}u {{minutes}}m over",
+    "scrollToAdjust": "Scroll om uitstelduur aan te passen"
+  }
+}

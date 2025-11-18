@@ -1,0 +1,25 @@
+{
+  "title": "Instellingen",
+  "subtitle": "Beheer uw WorkRecall voorkeuren en accountinstellingen.",
+  "promptFrequency": {
+    "label": "Promptfrequentie",
+    "description": "Hoe vaak (in minuten) moet WorkRecall u vragen om uw werk te loggen?",
+    "recommendation": "Aanbevolen: 30-60 minuten. Bereik: 1-1440 minuten (24 uur).",
+    "validationError": "Voer een waarde in tussen 1 en 1440 minuten (24 uur)",
+    "saveSuccess": "Instellingen succesvol opgeslagen!"
+  },
+  "sections": {
+    "notifications": {
+      "title": "Meldingen",
+      "comingSoon": "Binnenkort beschikbaar: Beheer meldingsvoorkeuren."
+    },
+    "darkMode": {
+      "title": "Donkere modus",
+      "comingSoon": "Binnenkort beschikbaar: Schakel donkere modus handmatig in. Volgt momenteel systeemvoorkeuren."
+    },
+    "database": {
+      "title": "Database",
+      "comingSoon": "Binnenkort beschikbaar: Database back-up en exportopties."
+    }
+  }
+}

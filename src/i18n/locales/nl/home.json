@@ -1,0 +1,23 @@
+{
+  "title": "Welkom bij WorkRecall",
+  "subtitle": "Houd uw werkactiviteiten bij, bouw een uitgebreid logboek op en gebruik AI-gegenereerde samenvattingen om uw prestaties te tonen.",
+  "stats": {
+    "totalEntries": {
+      "label": "Totaal aantal items",
+      "description": "Alle werklogboek items"
+    },
+    "thisWeek": {
+      "label": "Deze week",
+      "description": "Items in de afgelopen 7 dagen"
+    },
+    "streak": {
+      "label": "Reeks",
+      "description": "Opeenvolgende dagen gelogd",
+      "days_one": "{{count}} dag",
+      "days_other": "{{count}} dagen"
+    }
+  },
+  "actions": {
+    "goToWorkLog": "Ga naar werklogboek"
+  }
+}

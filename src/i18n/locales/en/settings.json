@@ -1,0 +1,25 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage your WorkRecall preferences and account settings.",
+  "promptFrequency": {
+    "label": "Prompt Frequency",
+    "description": "How often (in minutes) should WorkRecall prompt you to log your work?",
+    "recommendation": "Recommended: 30-60 minutes. Range: 1-1440 minutes (24 hours).",
+    "validationError": "Please enter a value between 1 and 1440 minutes (24 hours)",
+    "saveSuccess": "Settings saved successfully!"
+  },
+  "sections": {
+    "notifications": {
+      "title": "Notifications",
+      "comingSoon": "Coming soon: Manage notification preferences."
+    },
+    "darkMode": {
+      "title": "Dark Mode",
+      "comingSoon": "Coming soon: Toggle dark mode manually. Currently follows system preferences."
+    },
+    "database": {
+      "title": "Database",
+      "comingSoon": "Coming soon: Database backup and export options."
+    }
+  }
+}

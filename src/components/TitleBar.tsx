@@ -17,15 +17,12 @@ export function TitleBar() {
   };
 
   return (
-    <div className="flex h-8 items-center justify-between bg-zinc-50 border-b border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 select-none">
-      {/* Left side - New Entry button */}
-      <div className="flex items-center px-2">
-        <button
-          disabled
-          className="px-1 py-1 text-xs font-medium text-zinc-400 bg-zinc-200 rounded cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600"
-        >
-          New Entry
-        </button>
+    <div className="flex h-8 items-center justify-between dark:bg-zinc-900 select-none">
+      {/* Left side - App name */}
+      <div className="flex items-center px-3" data-tauri-drag-region>
+        <span className="text-xs font-semibold text-zinc-950 dark:text-white">
+          WorkRecall
+        </span>
       </div>
 
       {/* Draggable region */}

@@ -1,0 +1,13 @@
+{
+  "title": "Export Data",
+  "subtitle": "Export your work log entries to Excel or CSV format.",
+  "premium": {
+    "message": "Export functionality is available in WorkRecall Premium. Upgrade to unlock Excel/CSV exports, AI-powered summaries, and advanced analytics."
+  },
+  "options": {
+    "title": "Export Options (Preview)",
+    "excel": "Export as Excel (.xlsx)",
+    "csv": "Export as CSV (.csv)",
+    "json": "Export as JSON"
+  }
+}

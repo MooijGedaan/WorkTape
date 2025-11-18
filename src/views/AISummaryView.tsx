@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { Button } from '../components/catalyst/button';
@@ -19,6 +20,7 @@ interface AISummary {
 }
 
 export function AISummaryView() {
+  const { t, i18n } = useTranslation(['aiSummary', 'common']);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
@@ -78,7 +80,7 @@ export function AISummaryView() {
       setSummaryExists(true);
     } catch (err) {
       console.error('Failed to save summary:', err);
-      setError('Failed to save summary to database');
+      setError(t('aiSummary:errors.saveFailed'));
     }
   };
 
@@ -101,13 +103,16 @@ export function AISummaryView() {
       console.log('Found entries:', entries.length);
 
       if (entries.length === 0) {
-        setError(`No work entries found for ${formatDate(selectedDate)}.`);
+        setError(t('aiSummary:errors.noEntries', { date: formatDate(selectedDate) }));
         setIsLoading(false);
         return;
       }
 
       if (entries.length < 2) {
-        setError(`At least 2 work entries are required to generate a summary. You only have ${entries.length} entry for ${formatDate(selectedDate)}.`);
+        setError(t('aiSummary:errors.minEntries', {
+          count: entries.length,
+          date: formatDate(selectedDate)
+        }));
         setIsLoading(false);
         return;
       }
@@ -146,7 +151,7 @@ export function AISummaryView() {
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       console.error('Failed to copy to clipboard:', err);
-      setError('Failed to copy to clipboard');
+      setError(t('aiSummary:errors.copyFailed'));
     }
   };
 
@@ -172,7 +177,7 @@ export function AISummaryView() {
 
   const formatDate = (dateStr: string): string => {
     const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('en-US', {
+    return new Intl.DateTimeFormat(i18n.language, {
       month: 'long',
       day: 'numeric',
       year: 'numeric',
@@ -182,15 +187,15 @@ export function AISummaryView() {
   return (
     <div className="flex flex-col h-full overflow-hidden w-full">
       <div className="flex-shrink-0 w-full">
-        <Heading>AI Daily Summary</Heading>
+        <Heading>{t('aiSummary:title')}</Heading>
         <Text className="mt-2 mb-6">
-          Generate a professional summary of your work for any day using AI.
+          {t('aiSummary:subtitle')}
         </Text>
 
         {/* Date Selection */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-zinc-950 dark:text-white mb-2">
-            Select Date
+            {t('aiSummary:dateSelection.label')}
           </label>
           <div className="flex gap-2 items-center">
             <input
@@ -201,10 +206,10 @@ export function AISummaryView() {
               className="px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Button onClick={setToday} plain>
-              Today
+              {t('common:dateActions.today')}
             </Button>
             <Button onClick={setYesterday} plain>
-              Yesterday
+              {t('common:dateActions.yesterday')}
             </Button>
           </div>
         </div>
@@ -216,13 +221,15 @@ export function AISummaryView() {
           color="blue"
           className="mb-6"
         >
-          {isLoading ? 'Generating Summary...' : (summaryExists ? 'Overwrite Summary' : 'Generate Summary')}
+          {isLoading
+            ? t('aiSummary:actions.generating')
+            : (summaryExists ? t('aiSummary:actions.overwrite') : t('aiSummary:actions.generate'))}
         </Button>
 
         {/* Error Display */}
         {error && (
           <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-900">
-            <p className="text-sm font-semibold text-red-900 dark:text-red-200">Error</p>
+            <p className="text-sm font-semibold text-red-900 dark:text-red-200">{t('common:status.error')}</p>
             <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
           </div>
         )}
@@ -231,7 +238,7 @@ export function AISummaryView() {
         {isLoading && (
           <div className="mb-4 p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900">
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              This may take a few seconds...
+              {t('aiSummary:loadingMessage')}
             </p>
           </div>
         )}
@@ -242,13 +249,13 @@ export function AISummaryView() {
         <div className="flex-1 flex flex-col min-h-0 w-full mt-4">
           <div className="flex items-center justify-between mb-3">
             <Heading level={2}>
-              AI Summary of {formatDate(selectedDate)}
+              {t('aiSummary:summaryTitle', { date: formatDate(selectedDate) })}
             </Heading>
             <Button
               onClick={handleCopy}
               color={copySuccess ? "green" : "zinc"}
             >
-              {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
+              {copySuccess ? t('common:actions.copied') : t('common:actions.copy')}
             </Button>
           </div>
 
@@ -266,7 +273,7 @@ export function AISummaryView() {
       {!summary && !isLoading && !error && (
         <div className="flex-1 flex items-center justify-center">
           <Text className="text-zinc-500 dark:text-zinc-400 italic">
-            Select a date and click "Generate Summary" to create your AI-powered work summary.
+            {t('aiSummary:emptyState')}
           </Text>
         </div>
       )}
