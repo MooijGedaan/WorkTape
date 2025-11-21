@@ -8,46 +8,46 @@ Group tasks together and provide a good / understandable description that summar
 The result should not have any md formatting, just plain text.";
 
 #[derive(Debug, Serialize)]
-struct OpenAIRequest {
-    model: String,
-    messages: Vec<Message>,
-    temperature: f32,
-    max_tokens: u32,
+pub struct OpenAIRequest {
+    pub model: String,
+    pub messages: Vec<Message>,
+    pub temperature: f32,
+    pub max_tokens: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-enum MessageContent {
+pub enum MessageContent {
     Text(String),
     MultiModal(Vec<ContentPart>),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Message {
-    role: String,
-    content: MessageContent,
+pub struct Message {
+    pub role: String,
+    pub content: MessageContent,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-enum ContentPart {
+pub enum ContentPart {
     Text { text: String },
     ImageUrl { image_url: ImageUrl },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct ImageUrl {
-    url: String,
+pub struct ImageUrl {
+    pub url: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct OpenAIResponse {
-    choices: Vec<Choice>,
+pub struct OpenAIResponse {
+    pub choices: Vec<Choice>,
 }
 
 #[derive(Debug, Deserialize)]
-struct Choice {
-    message: Message,
+pub struct Choice {
+    pub message: Message,
 }
 
 #[derive(Debug)]

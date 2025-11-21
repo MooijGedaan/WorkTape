@@ -14,6 +14,8 @@ interface WorkEntry {
   id: number;
   description: string;
   timestamp: string;
+  source?: 'manual' | 'auto'; // Track whether entry was manual or auto-generated
+  screenshots_count?: number; // For auto entries
 }
 
 let db: Database | null = null;
@@ -69,10 +71,23 @@ export function WorkLogView() {
       setIsLoading(true);
       setError(null);
       const database = await getDatabase();
-      const result = await database.select<WorkEntry[]>(
-        "SELECT id, description, timestamp FROM work_entries ORDER BY timestamp DESC"
+
+      // Fetch manual entries
+      const manualEntries = await database.select<WorkEntry[]>(
+        "SELECT id, description, timestamp, 'manual' as source FROM work_entries"
       );
-      setEntries(result);
+
+      // Fetch auto-generated entries
+      const autoEntries = await database.select<WorkEntry[]>(
+        "SELECT id, description, timestamp, 'auto' as source, screenshots_count FROM auto_work_entries"
+      );
+
+      // Combine and sort by timestamp (newest first)
+      const allEntries = [...manualEntries, ...autoEntries].sort((a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      setEntries(allEntries);
     } catch (err) {
       setError(t('worklog:errors.loadFailed', { error: String(err) }));
       console.error("Error loading entries:", err);
@@ -140,16 +155,20 @@ export function WorkLogView() {
 
     // Set timeout to permanently delete after 5 seconds
     const timeoutId = window.setTimeout(() => {
-      permanentlyDeleteEntry(id);
+      permanentlyDeleteEntry(entryToDelete);
     }, 5000);
 
     setUndoTimeoutId(timeoutId);
   };
 
-  const permanentlyDeleteEntry = async (id: number) => {
+  const permanentlyDeleteEntry = async (entry: WorkEntry) => {
     try {
       const database = await getDatabase();
-      await database.execute("DELETE FROM work_entries WHERE id = ?", [id]);
+
+      // Determine which table to delete from based on the entry's source
+      const tableName = entry.source === 'auto' ? 'auto_work_entries' : 'work_entries';
+
+      await database.execute(`DELETE FROM ${tableName} WHERE id = ?`, [entry.id]);
       setShowUndoNotification(false);
       setDeletedEntry(null);
       setUndoTimeoutId(null);
@@ -261,12 +280,19 @@ export function WorkLogView() {
                 </thead>
                 <tbody>
                   {entries.map((entry) => (
-                    <tr key={entry.id}>
+                    <tr key={`${entry.source}-${entry.id}`}>
                       <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-zinc-500 dark:text-zinc-400 font-medium whitespace-nowrap align-top">
                         {formatTimestamp(entry.timestamp)}
                       </td>
                       <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 break-words align-top">
-                        {entry.description}
+                        <div className="flex items-start gap-2">
+                          <span className="flex-1">{entry.description}</span>
+                          {entry.source === 'auto' && (
+                            <span className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-300/10 whitespace-nowrap flex-shrink-0">
+                              Auto
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-right whitespace-nowrap align-top">
                         <button

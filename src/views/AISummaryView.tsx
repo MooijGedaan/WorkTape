@@ -95,12 +95,25 @@ export function AISummaryView() {
 
       // Fetch work entries for the selected date from database
       const database = await getDatabase();
-      const entries = await database.select<Array<{ description: string; timestamp: string }>>(
+
+      // Fetch manual entries
+      const manualEntries = await database.select<Array<{ description: string; timestamp: string }>>(
         "SELECT description, timestamp FROM work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
         [selectedDate]
       );
 
-      console.log('Found entries:', entries.length);
+      // Fetch auto-generated entries
+      const autoEntries = await database.select<Array<{ description: string; timestamp: string }>>(
+        "SELECT description, timestamp FROM auto_work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
+        [selectedDate]
+      );
+
+      // Combine both types of entries and sort by timestamp
+      const entries = [...manualEntries, ...autoEntries].sort((a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+
+      console.log('Found entries:', entries.length, '(manual:', manualEntries.length, ', auto:', autoEntries.length, ')');
 
       if (entries.length === 0) {
         setError(t('aiSummary:errors.noEntries', { date: formatDate(selectedDate) }));
