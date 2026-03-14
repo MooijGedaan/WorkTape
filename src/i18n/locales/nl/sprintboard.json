@@ -1,0 +1,55 @@
+{
+  "title": "Sprintbord",
+  "addTask": "Taak toevoegen",
+  "columns": {
+    "todo": "Te doen",
+    "in-progress": "In uitvoering",
+    "done": "Klaar",
+    "blocked": "Geblokkeerd"
+  },
+  "priority": {
+    "low": "Laag",
+    "medium": "Middel",
+    "high": "Hoog"
+  },
+  "filter": {
+    "all": "Alles",
+    "low": "Laag",
+    "medium": "Middel",
+    "high": "Hoog"
+  },
+  "taskForm": {
+    "titleLabel": "Titel",
+    "titlePlaceholder": "Wat moet er gedaan worden?",
+    "descriptionLabel": "Beschrijving",
+    "descriptionPlaceholder": "Optionele details...",
+    "priorityLabel": "Prioriteit",
+    "statusLabel": "Status",
+    "labelsLabel": "Labels",
+    "labelsPlaceholder": "Label toevoegen en Enter drukken",
+    "nextActionLabel": "Volgende actie / wachten op",
+    "nextActionPlaceholder": "bijv. wachten op PR-review, geblokkeerd tot stand-up",
+    "resolveNextAction": "Oplossen",
+    "nextActionHistory": "Geschiedenis",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "create": "Taak aanmaken",
+    "delete": "Taak verwijderen",
+    "confirmDelete": "Weet je zeker dat je deze taak wilt verwijderen?"
+  },
+  "workLinks": {
+    "title": "Werklog-koppelingen",
+    "linked": "Gekoppelde invoer",
+    "suggestions": "Suggesties",
+    "noLinked": "Nog geen werklog-invoer gekoppeld.",
+    "noSuggestions": "Geen suggesties gevonden. Voeg trefwoorden toe aan de taaktitel.",
+    "unlink": "Ontkoppelen",
+    "link": "Koppelen",
+    "auto": "Auto",
+    "manual": "Handmatig"
+  },
+  "empty": {
+    "title": "Nog geen taken",
+    "description": "Klik op \"Taak toevoegen\" om je eerste taak aan te maken."
+  }
+}

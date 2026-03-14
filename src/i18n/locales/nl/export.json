@@ -1,13 +1,20 @@
 {
   "title": "Gegevens exporteren",
-  "subtitle": "Exporteer uw werklogboek items naar Excel of CSV formaat.",
-  "premium": {
-    "message": "Exportfunctionaliteit is beschikbaar in WorkRecall Premium. Upgrade om Excel/CSV-exports, AI-gegenereerde samenvattingen en geavanceerde analyses te ontgrendelen."
+  "subtitle": "Exporteer uw werklogboek items naar CSV of JSON voor een geselecteerde datumbereik.",
+  "exporting": "Exporteren…",
+  "savedTo": "Opgeslagen in:",
+  "dateRange": {
+    "title": "Datumbereik",
+    "from": "Van",
+    "to": "Tot"
   },
   "options": {
-    "title": "Exportopties (Voorbeeld)",
+    "title": "Exportopties",
     "excel": "Exporteren als Excel (.xlsx)",
-    "csv": "Exporteren als CSV (.csv)",
+    "csv": "Exporteren als CSV",
     "json": "Exporteren als JSON"
+  },
+  "premium": {
+    "message": "Excel-export is beschikbaar in WorkRecall Premium."
   }
 }

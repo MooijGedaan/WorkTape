@@ -72,3 +72,34 @@ impl IdleDetector {
         self.last_activity_time.elapsed()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::thread;
+
+    #[test]
+    fn time_since_activity_increases_over_time() {
+        let detector = IdleDetector::new(5);
+
+        let t1 = detector.time_since_activity();
+        thread::sleep(Duration::from_millis(20));
+        let t2 = detector.time_since_activity();
+
+        assert!(t2 > t1, "time_since_activity should increase over time");
+    }
+
+    #[test]
+    fn new_detector_is_not_idle_immediately() {
+        // With a 5-minute threshold, a freshly created detector should not be idle
+        let mut detector = IdleDetector::new(5);
+        // Just after creation the elapsed time is near zero, well below threshold
+        // Note: is_idle() also checks input state, so we just check the duration is small
+        assert!(
+            detector.time_since_activity().as_secs() < 1,
+            "A newly created IdleDetector should have near-zero idle time"
+        );
+        // Suppress unused warning — is_idle reads device state which is fine in tests
+        let _ = detector.is_idle();
+    }
+}

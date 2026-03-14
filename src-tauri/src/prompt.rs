@@ -15,7 +15,7 @@ pub fn start_prompt_timer(app: AppHandle) {
 
     // Store the sender globally so we can send messages to the timer thread
     {
-        let mut channel = TIMER_CHANNEL.lock().unwrap();
+        let mut channel = TIMER_CHANNEL.lock().unwrap_or_else(|e| e.into_inner());
         *channel = Some(tx);
     }
 
@@ -53,7 +53,37 @@ pub fn start_prompt_timer(app: AppHandle) {
     });
 }
 
+fn is_today_ended(app: &AppHandle) -> bool {
+    let db_path = match app.path().app_data_dir() {
+        Ok(p) => p.join("workrecall.db"),
+        Err(_) => return false,
+    };
+    let db_url = format!("sqlite:{}", db_path.display());
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+    // Use a blocking runtime check — this is called from a non-async context
+    tauri::async_runtime::block_on(async move {
+        let pool = match sqlx::sqlite::SqlitePool::connect(&db_url).await {
+            Ok(p) => p,
+            Err(_) => return false,
+        };
+        let result = sqlx::query_as::<_, (i64,)>(
+            "SELECT COUNT(*) FROM day_endings WHERE date = ?1"
+        )
+        .bind(&today)
+        .fetch_one(&pool)
+        .await;
+        pool.close().await;
+        result.map(|(n,)| n > 0).unwrap_or(false)
+    })
+}
+
 pub fn show_prompt_window(app: &AppHandle) -> tauri::Result<()> {
+    // Don't show prompt if today's day has been ended
+    if is_today_ended(app) {
+        return Ok(());
+    }
+
     // Check if prompt window already exists
     if let Some(existing) = app.get_webview_window("prompt") {
         let _ = existing.set_focus();
@@ -67,7 +97,7 @@ pub fn show_prompt_window(app: &AppHandle) -> tauri::Result<()> {
 
     // Window dimensions
     let window_width = 400.0;
-    let window_height = 280.0;
+    let window_height = 420.0;
 
     // Calculate position for bottom-right corner (with padding)
     let padding = 20.0;
@@ -104,7 +134,7 @@ pub fn close_prompt_window(app: &AppHandle) -> tauri::Result<()> {
 
 pub fn schedule_next_prompt(_app: AppHandle, minutes: u64) {
     // Send message to the timer thread to reschedule with custom interval
-    let channel = TIMER_CHANNEL.lock().unwrap();
+    let channel = TIMER_CHANNEL.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(tx) = channel.as_ref() {
         let _ = tx.send(TimerMessage::CustomInterval(minutes));
     }

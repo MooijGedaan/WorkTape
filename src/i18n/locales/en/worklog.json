@@ -14,7 +14,8 @@
       "time": "Time",
       "description": "Description",
       "delete": "Delete"
-    }
+    },
+    "regenerateSummary": "Regenerate AI summary for this day"
   },
   "errors": {
     "loadFailed": "Failed to load entries: {{error}}",

@@ -33,8 +33,8 @@ impl AutoLoggerService {
     }
 
     pub fn update_settings(&self, _app_handle: tauri::AppHandle, screenshots_per_hour: u64, api_requests_per_day: u64) -> Result<(), String> {
-        *self.screenshots_per_hour.lock().unwrap() = screenshots_per_hour;
-        *self.api_requests_per_day.lock().unwrap() = api_requests_per_day;
+        *self.screenshots_per_hour.lock().unwrap_or_else(|e| e.into_inner()) = screenshots_per_hour;
+        *self.api_requests_per_day.lock().unwrap_or_else(|e| e.into_inner()) = api_requests_per_day;
 
         info!("Updated auto-capture settings:");
         info!("  Screenshots per hour: {}", screenshots_per_hour);
@@ -72,7 +72,7 @@ impl AutoLoggerService {
 
             loop {
                 // Get current interval setting
-                let screenshots_per_hour = *screenshots_ref.lock().unwrap();
+                let screenshots_per_hour = *screenshots_ref.lock().unwrap_or_else(|e| e.into_inner());
                 let capture_interval_secs = 3600 / screenshots_per_hour.max(1);
 
                 // Calculate time until next capture
@@ -86,8 +86,8 @@ impl AutoLoggerService {
                 last_capture_instant = std::time::Instant::now();
 
                 // Check if enabled and not idle
-                let is_enabled = *enabled_clone.lock().unwrap();
-                let is_idle = idle_detector_clone.lock().unwrap().is_idle();
+                let is_enabled = *enabled_clone.lock().unwrap_or_else(|e| e.into_inner());
+                let is_idle = idle_detector_clone.lock().unwrap_or_else(|e| e.into_inner()).is_idle();
 
                 if is_enabled && !is_idle {
                     // Try to capture screenshot
@@ -97,7 +97,7 @@ impl AutoLoggerService {
                                 if captured {
                                     let buffer_size = service.buffer_size();
                                     info!("✅ Screenshot captured (change detected) - buffer now has {} screenshots", buffer_size);
-                                    *total_captures_clone.lock().unwrap() += 1;
+                                    *total_captures_clone.lock().unwrap_or_else(|e| e.into_inner()) += 1;
                                 } else {
                                     info!("⏭️  Screenshot skipped (no change detected)");
                                 }
@@ -110,13 +110,14 @@ impl AutoLoggerService {
         });
 
         // Start analysis loop
+        let app_handle_for_analysis = app_handle.clone();
         async_runtime::spawn(async move {
             info!("✅ Analysis loop started");
             let mut last_analysis_instant = std::time::Instant::now();
 
             loop {
                 // Get current interval setting
-                let api_requests_per_day = *api_requests_per_day_ref.lock().unwrap();
+                let api_requests_per_day = *api_requests_per_day_ref.lock().unwrap_or_else(|e| e.into_inner());
                 let analysis_interval_secs = 86400 / api_requests_per_day.max(1);
 
                 // Calculate time until next analysis
@@ -130,7 +131,7 @@ impl AutoLoggerService {
                 last_analysis_instant = std::time::Instant::now();
 
                 // Check if there are screenshots to analyze
-                let is_enabled = *enabled.lock().unwrap();
+                let is_enabled = *enabled.lock().unwrap_or_else(|e| e.into_inner());
                 let buffer_size = capture_service.lock()
                     .map(|s| s.buffer_size())
                     .unwrap_or(0);
@@ -140,7 +141,7 @@ impl AutoLoggerService {
                 if is_enabled && buffer_size > 0 {
                     info!("Starting analysis for {} screenshots", buffer_size);
                     // Trigger AI analysis
-                    let app = app_handle.clone();
+                    let app = app_handle_for_analysis.clone();
                     let service = capture_service.clone();
                     let analyses = total_analyses.clone();
                     let last_time = last_analysis.clone();
@@ -148,8 +149,8 @@ impl AutoLoggerService {
                     async_runtime::spawn(async move {
                         match analyze_and_log(app, service).await {
                             Ok(_) => {
-                                *analyses.lock().unwrap() += 1;
-                                *last_time.lock().unwrap() = Some(chrono::Utc::now().to_rfc3339());
+                                *analyses.lock().unwrap_or_else(|e| e.into_inner()) += 1;
+                                *last_time.lock().unwrap_or_else(|e| e.into_inner()) = Some(chrono::Utc::now().to_rfc3339());
                             }
                             Err(e) => error!("Analysis error: {}", e),
                         }
@@ -157,52 +158,85 @@ impl AutoLoggerService {
                 }
             }
         });
+
+        // Start daily cleanup loop for debug logs
+        let app_handle_for_cleanup = app_handle.clone();
+        async_runtime::spawn(async move {
+            info!("✅ Debug log cleanup loop started");
+
+            loop {
+                // Run cleanup once per day (24 hours)
+                tokio::time::sleep(Duration::from_secs(86400)).await;
+
+                info!("Running daily debug log cleanup...");
+
+                // Get database path
+                if let Ok(app_data_dir) = app_handle_for_cleanup.path().app_data_dir() {
+                    let db_path = app_data_dir.join("workrecall.db");
+                    let db_url = format!("sqlite:{}", db_path.display());
+
+                    // Run cleanup
+                    match cleanup_debug_logs_internal(&db_url).await {
+                        Ok(count) => {
+                            if count > 0 {
+                                info!("🗑️  Cleaned up {} old debug log entries", count);
+                            } else {
+                                info!("✅ No old debug logs to clean up");
+                            }
+                        }
+                        Err(e) => error!("❌ Failed to cleanup debug logs: {}", e),
+                    }
+                } else {
+                    error!("❌ Failed to get app data directory for cleanup");
+                }
+            }
+        });
     }
 
     pub fn enable(&self) {
         info!("Auto-logging enabled");
-        *self.enabled.lock().unwrap() = true;
+        *self.enabled.lock().unwrap_or_else(|e| e.into_inner()) = true;
     }
 
     pub fn disable(&self) {
         info!("Auto-logging disabled");
-        *self.enabled.lock().unwrap() = false;
+        *self.enabled.lock().unwrap_or_else(|e| e.into_inner()) = false;
     }
 
     pub fn is_enabled(&self) -> bool {
-        *self.enabled.lock().unwrap()
+        *self.enabled.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     pub fn is_idle(&self) -> bool {
-        self.idle_detector.lock().unwrap().is_idle()
+        self.idle_detector.lock().unwrap_or_else(|e| e.into_inner()).is_idle()
     }
 
     pub fn buffer_size(&self) -> usize {
-        self.capture_service.lock().unwrap().buffer_size()
+        self.capture_service.lock().unwrap_or_else(|e| e.into_inner()).buffer_size()
     }
 
     pub fn last_change_score(&self) -> u32 {
-        self.capture_service.lock().unwrap().last_change_score()
+        self.capture_service.lock().unwrap_or_else(|e| e.into_inner()).last_change_score()
     }
 
     pub fn time_since_last_capture(&self) -> u64 {
-        self.capture_service.lock().unwrap().time_since_last_capture().as_secs()
+        self.capture_service.lock().unwrap_or_else(|e| e.into_inner()).time_since_last_capture().as_secs()
     }
 
     pub fn total_captures_today(&self) -> u64 {
-        *self.total_captures_today.lock().unwrap()
+        *self.total_captures_today.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     pub fn total_analyses_today(&self) -> u64 {
-        *self.total_analyses_today.lock().unwrap()
+        *self.total_analyses_today.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     pub fn last_analysis_time(&self) -> Option<String> {
-        self.last_analysis_time.lock().unwrap().clone()
+        self.last_analysis_time.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
     pub fn clear_buffer(&self) {
-        self.capture_service.lock().unwrap().clear_buffer();
+        self.capture_service.lock().unwrap_or_else(|e| e.into_inner()).clear_buffer();
     }
 
     pub fn trigger_manual_analysis(&self, app_handle: tauri::AppHandle) -> Result<(), String> {
@@ -213,8 +247,8 @@ impl AutoLoggerService {
         async_runtime::spawn(async move {
             match analyze_and_log(app_handle, service).await {
                 Ok(_) => {
-                    *analyses.lock().unwrap() += 1;
-                    *last_time.lock().unwrap() = Some(chrono::Utc::now().to_rfc3339());
+                    *analyses.lock().unwrap_or_else(|e| e.into_inner()) += 1;
+                    *last_time.lock().unwrap_or_else(|e| e.into_inner()) = Some(chrono::Utc::now().to_rfc3339());
                 }
                 Err(e) => error!("Manual analysis error: {}", e),
             }
@@ -305,7 +339,7 @@ async fn analyze_and_log(
 
     // 1. Get screenshots from buffer
     let screenshots = {
-        let mut service = capture_service.lock().unwrap();
+        let mut service = capture_service.lock().unwrap_or_else(|e| e.into_inner());
         service.get_buffer_for_analysis()
     };
 
@@ -601,4 +635,45 @@ async fn analyze_work_batch(
     };
 
     Ok(text)
+}
+
+/// Internal function to cleanup old debug logs
+async fn cleanup_debug_logs_internal(db_url: &str) -> Result<u32, String> {
+    use sqlx::SqlitePool;
+
+    let pool = SqlitePool::connect(db_url)
+        .await
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    // Get retention days setting
+    let retention_result = sqlx::query_as::<_, (String,)>(
+        "SELECT value FROM settings WHERE key = 'debug_logs_retention_days'"
+    )
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| format!("Failed to query retention days: {}", e))?;
+
+    let retention_days = retention_result
+        .and_then(|(val,)| val.parse::<i64>().ok())
+        .unwrap_or(7);
+
+    // Calculate cutoff date
+    let cutoff_date = chrono::Utc::now() - chrono::Duration::days(retention_days);
+    let cutoff_str = cutoff_date.to_rfc3339();
+
+    // Delete old logs that have request_messages (debug data)
+    let result = sqlx::query(
+        "DELETE FROM api_call_logs
+         WHERE created_at < ?1
+         AND request_messages IS NOT NULL
+         AND request_messages != ''"
+    )
+    .bind(&cutoff_str)
+    .execute(&pool)
+    .await
+    .map_err(|e| format!("Failed to delete old debug logs: {}", e))?;
+
+    pool.close().await;
+
+    Ok(result.rows_affected() as u32)
 }

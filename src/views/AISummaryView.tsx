@@ -1,16 +1,10 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
 import { invoke } from "@tauri-apps/api/core";
-import Database from "@tauri-apps/plugin-sql";
+import { getDb } from '../hooks/useDatabase';
 import { Button } from '../components/catalyst/button';
 import { Heading } from '../components/catalyst/heading';
 import { Text } from '../components/catalyst/text';
-
-let db: Database | null = null;
-
-async function getDatabase() {
-  return db ?? await Database.load("sqlite:workrecall.db");
-}
 
 interface AISummary {
   date: string;
@@ -32,21 +26,16 @@ export function AISummaryView() {
 
   const loadSummary = async () => {
     try {
-      console.log('Loading summary for date:', selectedDate);
-      const database = await getDatabase();
+      const database = await getDb();
       const result = await database.select<AISummary[]>(
         "SELECT date, summary, created_at, updated_at FROM ai_summaries WHERE date = ?",
         [selectedDate]
       );
 
-      console.log('Summary query result:', result);
-
       if (result.length > 0) {
-        console.log('Summary found, setting state');
         setSummary(result[0].summary);
         setSummaryExists(true);
       } else {
-        console.log('No summary found for this date');
         setSummary('');
         setSummaryExists(false);
       }
@@ -66,8 +55,7 @@ export function AISummaryView() {
 
   const saveSummary = async (summaryText: string) => {
     try {
-      console.log('Saving summary for date:', selectedDate);
-      const database = await getDatabase();
+      const database = await getDb();
       const now = new Date().toISOString();
 
       // Use INSERT OR REPLACE to either insert new or update existing
@@ -76,7 +64,6 @@ export function AISummaryView() {
         [selectedDate, summaryText, selectedDate, now, now]
       );
 
-      console.log('Summary saved successfully');
       setSummaryExists(true);
     } catch (err) {
       console.error('Failed to save summary:', err);
@@ -91,10 +78,8 @@ export function AISummaryView() {
     setCopySuccess(false);
 
     try {
-      console.log('Fetching work entries for:', selectedDate);
-
       // Fetch work entries for the selected date from database
-      const database = await getDatabase();
+      const database = await getDb();
 
       // Fetch manual entries
       const manualEntries = await database.select<Array<{ description: string; timestamp: string }>>(
@@ -112,8 +97,6 @@ export function AISummaryView() {
       const entries = [...manualEntries, ...autoEntries].sort((a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
-
-      console.log('Found entries:', entries.length, '(manual:', manualEntries.length, ', auto:', autoEntries.length, ')');
 
       if (entries.length === 0) {
         setError(t('aiSummary:errors.noEntries', { date: formatDate(selectedDate) }));
@@ -136,15 +119,13 @@ export function AISummaryView() {
         entry.timestamp
       ]);
 
-      console.log('Calling generate_daily_summary...');
-
       // Call Tauri command to generate summary
       const generatedSummary = await invoke<string>('generate_daily_summary', {
         entries: entryTuples,
-        date: selectedDate
+        date: selectedDate,
+        language: i18n.language,
       });
 
-      console.log('Summary generated successfully');
       setSummary(generatedSummary);
 
       // Save summary to database

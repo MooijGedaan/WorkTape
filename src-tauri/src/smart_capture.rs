@@ -2,7 +2,9 @@ use std::time::{Duration, Instant};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use crate::screenshot::{capture_all_monitors, ScreenshotData};
-use log::{info, debug};
+use log::{info, debug, warn};
+
+const MAX_BUFFER_SCREENSHOTS: usize = 100;
 
 pub struct SmartCaptureService {
     last_hash: Option<u64>,
@@ -53,6 +55,10 @@ impl SmartCaptureService {
             };
 
             debug!("Screenshot captured - Change detected");
+            if self.screenshot_buffer.len() >= MAX_BUFFER_SCREENSHOTS {
+                warn!("Screenshot buffer full ({} items), dropping oldest entry", MAX_BUFFER_SCREENSHOTS);
+                self.screenshot_buffer.remove(0);
+            }
             self.screenshot_buffer.push(captured);
             self.last_hash = Some(current_hash);
             self.last_capture_time = Instant::now();
@@ -65,7 +71,7 @@ impl SmartCaptureService {
     }
 
     /// Create simple hash from screenshots (based on size and partial content)
-    fn create_simple_hash(&self, screenshots: &[ScreenshotData]) -> Result<u64, String> {
+    pub(crate) fn create_simple_hash(&self, screenshots: &[ScreenshotData]) -> Result<u64, String> {
         let primary = screenshots.iter()
             .find(|s| s.is_primary)
             .or_else(|| screenshots.first())
@@ -122,5 +128,86 @@ impl SmartCaptureService {
     pub fn clear_buffer(&mut self) {
         info!("Clearing screenshot buffer ({} items)", self.screenshot_buffer.len());
         self.screenshot_buffer.clear();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::screenshot::ScreenshotData;
+
+    fn make_screenshot(base64: &str, width: u32, height: u32) -> ScreenshotData {
+        ScreenshotData {
+            monitor_id: 1,
+            monitor_name: "Test Monitor".to_string(),
+            image_base64: base64.to_string(),
+            width,
+            height,
+            is_primary: true,
+        }
+    }
+
+    #[test]
+    fn create_simple_hash_is_deterministic() {
+        let service = SmartCaptureService::new();
+        let screenshots = vec![make_screenshot("abc123", 1920, 1080)];
+
+        let hash1 = service.create_simple_hash(&screenshots).unwrap();
+        let hash2 = service.create_simple_hash(&screenshots).unwrap();
+
+        assert_eq!(hash1, hash2, "Hash should be deterministic for identical input");
+    }
+
+    #[test]
+    fn create_simple_hash_differs_on_different_content() {
+        let service = SmartCaptureService::new();
+
+        let screenshots_a = vec![make_screenshot("abc123", 1920, 1080)];
+        let screenshots_b = vec![make_screenshot("xyz987", 1920, 1080)];
+
+        let hash_a = service.create_simple_hash(&screenshots_a).unwrap();
+        let hash_b = service.create_simple_hash(&screenshots_b).unwrap();
+
+        assert_ne!(hash_a, hash_b, "Different content should produce different hashes");
+    }
+
+    #[test]
+    fn create_simple_hash_handles_empty_base64() {
+        let service = SmartCaptureService::new();
+        let screenshots = vec![make_screenshot("", 1920, 1080)];
+
+        let result = service.create_simple_hash(&screenshots);
+        assert!(result.is_ok(), "Should handle empty base64 without panicking");
+    }
+
+    #[test]
+    fn create_simple_hash_returns_err_for_empty_screenshots() {
+        let service = SmartCaptureService::new();
+        let result = service.create_simple_hash(&[]);
+        assert!(result.is_err(), "Should return error for empty screenshot slice");
+    }
+
+    #[test]
+    fn buffer_caps_at_max_screenshots() {
+        let mut service = SmartCaptureService::new();
+
+        // Manually push MAX_BUFFER_SCREENSHOTS + 10 items
+        for i in 0..(MAX_BUFFER_SCREENSHOTS + 10) {
+            let captured = CapturedScreenshot {
+                timestamp: format!("2026-01-01T00:00:{:02}Z", i % 60),
+                screenshots: vec![make_screenshot("abc", 1920, 1080)],
+                change_score: 10,
+            };
+            if service.screenshot_buffer.len() >= MAX_BUFFER_SCREENSHOTS {
+                service.screenshot_buffer.remove(0);
+            }
+            service.screenshot_buffer.push(captured);
+        }
+
+        assert_eq!(
+            service.buffer_size(),
+            MAX_BUFFER_SCREENSHOTS,
+            "Buffer should not exceed MAX_BUFFER_SCREENSHOTS"
+        );
     }
 }

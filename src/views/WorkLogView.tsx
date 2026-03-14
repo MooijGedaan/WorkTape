@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
-import { listen } from '@tauri-apps/api/event';
-import Database from "@tauri-apps/plugin-sql";
+import { useState, useEffect, useCallback } from "react";
+import { useTauriEvent } from '../hooks/useTauriEvent';
+import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/catalyst/button';
 import { Input } from '../components/catalyst/input';
 import { Field, Label } from '../components/catalyst/fieldset';
 import { Heading } from '../components/catalyst/heading';
 import { Text } from '../components/catalyst/text';
-import { XMarkIcon } from '../components/icons';
+import { XMarkIcon, ClockIcon } from '../components/icons';
 import { UndoNotification } from '../components/UndoNotification';
+import { getDb } from '../hooks/useDatabase';
 
 interface WorkEntry {
   id: number;
@@ -16,16 +17,15 @@ interface WorkEntry {
   timestamp: string;
   source?: 'manual' | 'auto'; // Track whether entry was manual or auto-generated
   screenshots_count?: number; // For auto entries
+  next_action?: string | null;
 }
 
-let db: Database | null = null;
-
-async function getDatabase() {
-  return db ?? await Database.load("sqlite:workrecall.db");
+function toLocalDateString(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export function WorkLogView() {
-  const { t } = useTranslation(['worklog', 'notifications', 'common']);
+  const { t, i18n } = useTranslation(['worklog', 'notifications', 'common']);
   const [taskDescription, setTaskDescription] = useState("");
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,6 +33,7 @@ export function WorkLogView() {
   const [showUndoNotification, setShowUndoNotification] = useState(false);
   const [deletedEntry, setDeletedEntry] = useState<WorkEntry | null>(null);
   const [undoTimeoutId, setUndoTimeoutId] = useState<number | null>(null);
+  const [isDayEnded, setIsDayEnded] = useState(false);
 
   // Load entries when component mounts
   useEffect(() => {
@@ -43,19 +44,21 @@ export function WorkLogView() {
     if (savedDraft) {
       setTaskDescription(savedDraft);
     }
+
+    // Check if today's day has been ended
+    const todayStr = toLocalDateString(new Date());
+    invoke<boolean>('is_day_ended', { date: todayStr }).then(setIsDayEnded).catch(console.error);
   }, []);
 
   // Listen for work entry saved events from prompt window
-  useEffect(() => {
-    const unlisten = listen('work-entry-saved', (event) => {
-      console.log('Received work-entry-saved event:', event);
-      loadEntries(); // Refresh the entries list
-    });
+  const onWorkEntrySaved = useCallback(() => loadEntries(), []);
+  useTauriEvent('work-entry-saved', onWorkEntrySaved);
 
-    return () => {
-      unlisten.then(fn => fn());
-    };
-  }, []);
+  // Listen for day-ended / day-unended events
+  const setDayEnded = useCallback(() => setIsDayEnded(true), []);
+  const setDayUnended = useCallback(() => setIsDayEnded(false), []);
+  useTauriEvent('day-ended', setDayEnded);
+  useTauriEvent('day-unended', setDayUnended);
 
   // Save draft text to localStorage whenever it changes
   useEffect(() => {
@@ -70,11 +73,11 @@ export function WorkLogView() {
     try {
       setIsLoading(true);
       setError(null);
-      const database = await getDatabase();
+      const database = await getDb();
 
       // Fetch manual entries
       const manualEntries = await database.select<WorkEntry[]>(
-        "SELECT id, description, timestamp, 'manual' as source FROM work_entries"
+        "SELECT id, description, timestamp, next_action, 'manual' as source FROM work_entries"
       );
 
       // Fetch auto-generated entries
@@ -109,17 +112,18 @@ export function WorkLogView() {
       setError(null);
 
       const timestamp = new Date().toISOString();
-      const database = await getDatabase();
+      const database = await getDb();
 
       const result = await database.execute(
-        "INSERT INTO work_entries (description, timestamp) VALUES (?, ?)",
-        [taskDescription, timestamp]
+        "INSERT INTO work_entries (description, timestamp, next_action) VALUES (?, ?, ?)",
+        [taskDescription, timestamp, null]
       );
 
       const newEntry: WorkEntry = {
         id: result.lastInsertId ?? Date.now(),
         description: taskDescription,
         timestamp: timestamp,
+        next_action: null,
       };
 
       // Add the new entry to the top of the list
@@ -163,7 +167,7 @@ export function WorkLogView() {
 
   const permanentlyDeleteEntry = async (entry: WorkEntry) => {
     try {
-      const database = await getDatabase();
+      const database = await getDb();
 
       // Determine which table to delete from based on the entry's source
       const tableName = entry.source === 'auto' ? 'auto_work_entries' : 'work_entries';
@@ -208,6 +212,46 @@ export function WorkLogView() {
     // Don't clear the timeout - let the deletion proceed
   };
 
+  const [regeneratingSummaryDate, setRegeneratingSummaryDate] = useState<string | null>(null);
+
+  const handleRegenerateSummary = async (date: string) => {
+    setRegeneratingSummaryDate(date);
+    try {
+      const database = await getDb();
+
+      const manualEntries = await database.select<Array<{ description: string; timestamp: string }>>(
+        "SELECT description, timestamp FROM work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
+        [date]
+      );
+      const autoEntries = await database.select<Array<{ description: string; timestamp: string }>>(
+        "SELECT description, timestamp FROM auto_work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
+        [date]
+      );
+      const allEntries = [...manualEntries, ...autoEntries].sort((a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+
+      if (allEntries.length < 2) return;
+
+      const entryTuples: [string, string][] = allEntries.map(e => [e.description, e.timestamp]);
+      const generatedSummary = await invoke<string>('generate_daily_summary', {
+        entries: entryTuples,
+        date,
+        language: i18n.language,
+      });
+
+      const now = new Date().toISOString();
+      await database.execute(
+        "INSERT OR REPLACE INTO ai_summaries (date, summary, created_at, updated_at) VALUES (?, ?, COALESCE((SELECT created_at FROM ai_summaries WHERE date = ?), ?), ?)",
+        [date, generatedSummary, date, now, now]
+      );
+    } catch (err) {
+      console.error('Failed to regenerate summary:', err);
+    } finally {
+      setRegeneratingSummaryDate(null);
+    }
+  };
+
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return new Intl.DateTimeFormat('en-US', {
@@ -238,25 +282,33 @@ export function WorkLogView() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mb-8">
-          <Field>
-            <Label>{t('worklog:form.label')}</Label>
-            <div className="flex gap-3 items-end">
-              <div className="flex-1">
-                <Input
-                  type="text"
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
-                  placeholder={t('worklog:form.placeholder')}
-                  disabled={isLoading}
-                />
+        {isDayEnded ? (
+          <div className="mb-8 p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 italic">
+              Today's log is closed. No more entries can be added.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="mb-8">
+            <Field>
+              <Label>{t('worklog:form.label')}</Label>
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    value={taskDescription}
+                    onChange={(e) => setTaskDescription(e.target.value)}
+                    placeholder={t('worklog:form.placeholder')}
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button type="submit" disabled={isLoading} color="blue">
+                  {isLoading ? t('worklog:form.submitting') : t('worklog:form.submit')}
+                </Button>
               </div>
-              <Button type="submit" disabled={isLoading} color="blue">
-                {isLoading ? t('worklog:form.submitting') : t('worklog:form.submit')}
-              </Button>
-            </div>
-          </Field>
-        </form>
+            </Field>
+          </form>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col min-h-0 w-full">
@@ -270,45 +322,82 @@ export function WorkLogView() {
         ) : (
           <div className="flex-1 scrollable mt-6 w-full">
             <div className="min-w-full">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead className="text-zinc-500 dark:text-zinc-400">
-                  <tr>
-                    <th className="border-b border-zinc-950/10 dark:border-white/10 px-4 py-2 font-medium whitespace-nowrap">{t('worklog:list.headers.time')}</th>
-                    <th className="border-b border-zinc-950/10 dark:border-white/10 px-4 py-2 font-medium">{t('worklog:list.headers.description')}</th>
-                    <th className="border-b border-zinc-950/10 dark:border-white/10 px-4 py-2 font-medium text-right whitespace-nowrap">{t('worklog:list.headers.delete')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map((entry) => (
-                    <tr key={`${entry.source}-${entry.id}`}>
-                      <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-zinc-500 dark:text-zinc-400 font-medium whitespace-nowrap align-top">
-                        {formatTimestamp(entry.timestamp)}
-                      </td>
-                      <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 break-words align-top">
-                        <div className="flex items-start gap-2">
-                          <span className="flex-1">{entry.description}</span>
-                          {entry.source === 'auto' && (
-                            <span className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-300/10 whitespace-nowrap flex-shrink-0">
-                              Auto
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-right whitespace-nowrap align-top">
-                        <button
-                          onClick={() => handleDelete(entry.id)}
-                          disabled={isLoading}
-                          className="text-zinc-400 hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          aria-label={t('common:actions.delete')}
-                          title={t('common:actions.delete')}
-                        >
-                          <XMarkIcon className="h-5 w-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {(() => {
+                // Group entries by date
+                const groups: { date: string; entries: WorkEntry[] }[] = [];
+                for (const entry of entries) {
+                  const date = entry.timestamp.split('T')[0];
+                  const existing = groups.find(g => g.date === date);
+                  if (existing) {
+                    existing.entries.push(entry);
+                  } else {
+                    groups.push({ date, entries: [entry] });
+                  }
+                }
+
+                return groups.map(({ date, entries: dayEntries }) => (
+                  <div key={date} className="mb-6">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead className="text-zinc-500 dark:text-zinc-400">
+                        <tr>
+                          <th className="border-b border-zinc-950/10 dark:border-white/10 px-4 py-2 font-medium whitespace-nowrap">{t('worklog:list.headers.time')}</th>
+                          <th className="border-b border-zinc-950/10 dark:border-white/10 px-4 py-2 font-medium">{t('worklog:list.headers.description')}</th>
+                          <th className="border-b border-zinc-950/10 dark:border-white/10 px-4 py-2 font-medium text-right whitespace-nowrap">{t('worklog:list.headers.delete')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dayEntries.map((entry) => (
+                          <tr key={`${entry.source}-${entry.id}`}>
+                            <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-zinc-500 dark:text-zinc-400 font-medium whitespace-nowrap align-top">
+                              {formatTimestamp(entry.timestamp)}
+                            </td>
+                            <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 break-words align-top text-zinc-900 dark:text-white">
+                              <div className="flex items-start gap-2">
+                                <div className="flex-1">
+                                  <span>{entry.description}</span>
+                                  {entry.next_action && (
+                                    <p className="mt-1 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                      <ClockIcon className="h-3 w-3 flex-shrink-0" />
+                                      {entry.next_action}
+                                    </p>
+                                  )}
+                                </div>
+                                {entry.source === 'auto' && (
+                                  <span className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-300/10 whitespace-nowrap flex-shrink-0">
+                                    Auto
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-right whitespace-nowrap align-top">
+                              <button
+                                onClick={() => handleDelete(entry.id)}
+                                disabled={isLoading}
+                                className="text-zinc-400 hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                aria-label={t('common:actions.delete')}
+                                title={t('common:actions.delete')}
+                              >
+                                <XMarkIcon className="h-5 w-5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="px-4 pt-2 pb-1">
+                      <button
+                        onClick={() => handleRegenerateSummary(date)}
+                        disabled={regeneratingSummaryDate === date}
+                        className="text-xs italic text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {regeneratingSummaryDate === date
+                          ? '...'
+                          : t('worklog:list.regenerateSummary')}
+                      </button>
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         )}

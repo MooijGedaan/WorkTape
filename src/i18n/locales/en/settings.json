@@ -1,4 +1,24 @@
 {
+  "onboarding": {
+    "title": "Welcome Guide",
+    "description": "Re-open the welcome guide to see an overview of WorkRecall's features.",
+    "showButton": "Show welcome guide"
+  },
+  "developer": {
+    "title": "Developer",
+    "description": "Advanced settings for debugging and development."
+  },
+  "onboardingModal": {
+    "steps": {
+      "prompts":     { "title": "Periodic Work Prompts",       "description": "WorkRecall reminds you at regular intervals to log what you're working on. Set your preferred frequency — every 30 minutes is a great starting point." },
+      "autoCapture": { "title": "Automatic Work Capture",      "description": "Enable AI-powered automatic capture: WorkRecall takes periodic screenshots, analyzes them with AI, and creates work log entries — all without any manual input." },
+      "aiSummary":   { "title": "AI-Powered Summaries",        "description": "Generate narrative summaries of your work day or week with a single click. Perfect for standups, performance reviews, and end-of-sprint retrospectives." },
+      "sprintBoard": { "title": "Sprint Board",                "description": "Manage your tasks on a visual Kanban board. Link work log entries to tasks to automatically track how much time you spent on each." },
+      "export":      { "title": "Data Export",                 "description": "Export your work log entries as CSV or JSON. Use your data for career advocacy, freelance invoicing, or reporting." }
+    },
+    "navigation": { "back": "Back", "next": "Next", "getStarted": "Get started" },
+    "dontShowAgain": "Don't show this again"
+  },
   "title": "Settings",
   "subtitle": "Manage your WorkRecall preferences and account settings.",
   "promptFrequency": {
@@ -8,14 +28,25 @@
     "validationError": "Please enter a value between 1 and 1440 minutes (24 hours)",
     "saveSuccess": "Settings saved successfully!"
   },
+  "launchOnStartup": {
+    "title": "Launch on Startup",
+    "description": "Automatically start WorkRecall when you log in.",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
   "sections": {
     "notifications": {
       "title": "Notifications",
       "comingSoon": "Coming soon: Manage notification preferences."
     },
     "darkMode": {
-      "title": "Dark Mode",
-      "comingSoon": "Coming soon: Toggle dark mode manually. Currently follows system preferences."
+      "title": "Display",
+      "description": "Choose your preferred color scheme.",
+      "options": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      }
     },
     "database": {
       "title": "Database",

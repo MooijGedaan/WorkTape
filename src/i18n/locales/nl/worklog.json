@@ -14,7 +14,8 @@
       "time": "Tijd",
       "description": "Beschrijving",
       "delete": "Verwijderen"
-    }
+    },
+    "regenerateSummary": "AI-samenvatting voor deze dag opnieuw genereren"
   },
   "errors": {
     "loadFailed": "Laden van items mislukt: {{error}}",

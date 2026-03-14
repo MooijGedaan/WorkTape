@@ -1,6 +1,6 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, createContext, useContext, useMemo } from 'react';
 
-export type View = 'home' | 'work-log' | 'ai-summary' | 'settings' | 'export' | 'screen-capture-test';
+export type View = 'home' | 'work-log' | 'ai-summary' | 'calendar' | 'sprint-board' | 'settings' | 'export' | 'screen-capture-test';
 
 interface NavigationContext {
   currentView: View;
@@ -9,48 +9,30 @@ interface NavigationContext {
   goToSettings: () => void;
   goToWorkLog: () => void;
   goToExport: () => void;
+  showOnboarding: () => void;
 }
 
 const NavigationContext = createContext<NavigationContext | null>(null);
 
-function getInitialView(): View {
-  // Get view from URL hash, default to 'work-log'
-  const hash = window.location.hash.slice(1); // Remove '#' prefix
-  const validViews: View[] = ['home', 'work-log', 'ai-summary', 'settings', 'export', 'screen-capture-test'];
-  return validViews.includes(hash as View) ? (hash as View) : 'work-log';
-}
+export function NavigationProvider({
+  children,
+  onShowOnboarding = () => {},
+}: Readonly<{ children: React.ReactNode; onShowOnboarding?: () => void }>) {
+  const [currentView, setCurrentView] = useState<View>('work-log');
 
-export function NavigationProvider({ children }: { children: React.ReactNode }) {
-  const [currentView, setCurrentView] = useState<View>(getInitialView);
-
-  // Listen for hash changes (e.g., browser back/forward buttons)
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1);
-      const validViews: View[] = ['home', 'work-log', 'ai-summary', 'settings', 'export', 'screen-capture-test'];
-      if (validViews.includes(hash as View)) {
-        setCurrentView(hash as View);
-      }
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  // Navigate to a view by setting hash
   const navigate = (view: View) => {
-    window.location.hash = view;
     setCurrentView(view);
   };
 
-  const navigation: NavigationContext = {
+  const navigation: NavigationContext = useMemo(() => ({
     currentView,
     navigate,
     goHome: () => navigate('home'),
     goToSettings: () => navigate('settings'),
     goToWorkLog: () => navigate('work-log'),
     goToExport: () => navigate('export'),
-  };
+    showOnboarding: onShowOnboarding,
+  }), [currentView, onShowOnboarding]);
 
   return (
     <NavigationContext.Provider value={navigation}>

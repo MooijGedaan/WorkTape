@@ -4,13 +4,7 @@ import { Heading } from '../components/catalyst/heading';
 import { Text } from '../components/catalyst/text';
 import { Button } from '../components/catalyst/button';
 import { useNavigation } from '../hooks/useNavigation.tsx';
-import Database from '@tauri-apps/plugin-sql';
-
-let db: Database | null = null;
-
-async function getDatabase() {
-  return db ?? await Database.load('sqlite:workrecall.db');
-}
+import { getDb } from '../hooks/useDatabase';
 
 interface Stats {
   totalEntries: number;
@@ -35,7 +29,7 @@ export function HomeView() {
   const loadStats = async () => {
     try {
       setIsLoading(true);
-      const database = await getDatabase();
+      const database = await getDb();
 
       // Get total entries
       const totalResult = await database.select<Array<{ count: number }>>(

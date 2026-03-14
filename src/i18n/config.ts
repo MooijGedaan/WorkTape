@@ -11,6 +11,7 @@ import notificationsEN from './locales/en/notifications.json';
 import aiSummaryEN from './locales/en/aiSummary.json';
 import promptEN from './locales/en/prompt.json';
 import settingsEN from './locales/en/settings.json';
+import sprintboardEN from './locales/en/sprintboard.json';
 
 import commonNL from './locales/nl/common.json';
 import worklogNL from './locales/nl/worklog.json';
@@ -20,6 +21,7 @@ import notificationsNL from './locales/nl/notifications.json';
 import aiSummaryNL from './locales/nl/aiSummary.json';
 import promptNL from './locales/nl/prompt.json';
 import settingsNL from './locales/nl/settings.json';
+import sprintboardNL from './locales/nl/sprintboard.json';
 
 // Define resources
 export const resources = {
@@ -32,6 +34,7 @@ export const resources = {
     aiSummary: aiSummaryEN,
     prompt: promptEN,
     settings: settingsEN,
+    sprintboard: sprintboardEN,
   },
   nl: {
     common: commonNL,
@@ -42,6 +45,7 @@ export const resources = {
     aiSummary: aiSummaryNL,
     prompt: promptNL,
     settings: settingsNL,
+    sprintboard: sprintboardNL,
   },
 } as const;
 
@@ -52,7 +56,7 @@ i18n
     resources,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'worklog', 'home', 'export', 'notifications', 'aiSummary', 'prompt', 'settings'],
+    ns: ['common', 'worklog', 'home', 'export', 'notifications', 'aiSummary', 'prompt', 'settings', 'sprintboard'],
 
     detection: {
       order: ['localStorage', 'navigator'],

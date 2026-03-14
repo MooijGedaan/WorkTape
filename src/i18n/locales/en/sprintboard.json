@@ -1,0 +1,55 @@
+{
+  "title": "Sprint Board",
+  "addTask": "Add Task",
+  "columns": {
+    "todo": "To Do",
+    "in-progress": "In Progress",
+    "done": "Done",
+    "blocked": "Blocked"
+  },
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "filter": {
+    "all": "All",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "taskForm": {
+    "titleLabel": "Title",
+    "titlePlaceholder": "What needs to be done?",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Optional details...",
+    "priorityLabel": "Priority",
+    "statusLabel": "Status",
+    "labelsLabel": "Labels",
+    "labelsPlaceholder": "Add label and press Enter",
+    "nextActionLabel": "Next action / on hold",
+    "nextActionPlaceholder": "e.g. waiting for PR review, blocked until standup",
+    "resolveNextAction": "Resolve",
+    "nextActionHistory": "History",
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create Task",
+    "delete": "Delete Task",
+    "confirmDelete": "Are you sure you want to delete this task?"
+  },
+  "workLinks": {
+    "title": "Work Log Links",
+    "linked": "Linked Entries",
+    "suggestions": "Suggestions",
+    "noLinked": "No work log entries linked yet.",
+    "noSuggestions": "No suggestions found. Try adding keywords to the task title.",
+    "unlink": "Unlink",
+    "link": "Link",
+    "auto": "Auto",
+    "manual": "Manual"
+  },
+  "empty": {
+    "title": "No tasks yet",
+    "description": "Click \"Add Task\" to create your first task."
+  }
+}

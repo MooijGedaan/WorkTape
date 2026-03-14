@@ -3,6 +3,16 @@
   "placeholder": "Beschrijf waar je momenteel mee bezig bent...",
   "submit": "Versturen",
   "submitting": "Opslaan...",
+  "recentEntries": "Eerder vandaag",
+  "taskLink": {
+    "label": "Koppel aan sprinttaak",
+    "noTask": "Geen taak"
+  },
+  "nextAction": {
+    "toggle": "wachten / volgende stap",
+    "label": "Wachten op of volgende actie",
+    "placeholder": "bijv. wachten op PR-review van Sarah, geblokkeerd tot stand-up"
+  },
   "skip": {
     "minutes": "Sla {{count}} minuut over",
     "minutes_plural": "Sla {{count}} minuten over",
