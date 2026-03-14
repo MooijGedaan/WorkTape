@@ -11,4 +11,10 @@ export {
   MinusIcon,
   XMarkIcon,
   CameraIcon,
+  BugAntIcon,
+  CalendarDaysIcon,
+  ViewColumnsIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/20/solid';
