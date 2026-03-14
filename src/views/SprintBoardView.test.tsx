@@ -22,7 +22,7 @@ vi.mock("../components/catalyst/dialog", () => ({
 }));
 
 vi.mock("../components/catalyst/button", () => ({
-  Button: ({ children, onClick, disabled, plain }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; plain?: boolean; color?: string }) => (
+  Button: ({ children, onClick, disabled, plain: _plain }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; plain?: boolean; color?: string }) => (
     <button onClick={onClick} disabled={disabled}>{children}</button>
   ),
 }));
@@ -47,7 +47,7 @@ vi.mock("../components/catalyst/text", () => ({
 }));
 
 vi.mock("../components/catalyst/badge", () => ({
-  Badge: ({ children, color, className }: { children: React.ReactNode; color?: string; className?: string }) => (
+  Badge: ({ children, color: _color, className }: { children: React.ReactNode; color?: string; className?: string }) => (
     <span className={className}>{children}</span>
   ),
 }));

@@ -23,7 +23,7 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("./components/catalyst/button", () => ({
   Button: ({
-    children, onClick, disabled, type, plain, color, onWheel, onMouseEnter, onMouseLeave, title, className,
+    children, onClick, disabled, type, plain: _plain, color: _color, onWheel, onMouseEnter, onMouseLeave, title, className,
   }: React.ButtonHTMLAttributes<HTMLButtonElement> & { plain?: boolean; color?: string }) => (
     <button
       onClick={onClick}
