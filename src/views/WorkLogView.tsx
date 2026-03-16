@@ -11,6 +11,12 @@ import { XMarkIcon, ClockIcon } from '../components/icons';
 import { UndoNotification } from '../components/UndoNotification';
 import { getDb } from '../hooks/useDatabase';
 
+interface SprintTask {
+  id: number;
+  title: string;
+  status: 'todo' | 'in-progress' | 'done' | 'blocked';
+}
+
 interface WorkEntry {
   id: number;
   description: string;
@@ -34,6 +40,8 @@ export function WorkLogView() {
   const [deletedEntry, setDeletedEntry] = useState<WorkEntry | null>(null);
   const [undoTimeoutId, setUndoTimeoutId] = useState<number | null>(null);
   const [isDayEnded, setIsDayEnded] = useState(false);
+  const [sprintTasks, setSprintTasks] = useState<SprintTask[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
 
   // Load entries when component mounts
   useEffect(() => {
@@ -48,6 +56,11 @@ export function WorkLogView() {
     // Check if today's day has been ended
     const todayStr = toLocalDateString(new Date());
     invoke<boolean>('is_day_ended', { date: todayStr }).then(setIsDayEnded).catch(console.error);
+
+    // Load active sprint tasks for linking
+    invoke<SprintTask[]>('get_sprint_tasks')
+      .then(tasks => setSprintTasks(tasks.filter(t => t.status !== 'done')))
+      .catch(console.error);
   }, []);
 
   // Listen for work entry saved events from prompt window
@@ -119,6 +132,18 @@ export function WorkLogView() {
         [taskDescription, timestamp, null]
       );
 
+      if (selectedTaskId !== null) {
+        try {
+          await invoke('add_work_link', {
+            taskId: selectedTaskId,
+            entrySource: 'manual',
+            entryId: result.lastInsertId,
+          });
+        } catch (linkError) {
+          console.error('Failed to link work entry to task:', linkError);
+        }
+      }
+
       const newEntry: WorkEntry = {
         id: result.lastInsertId ?? Date.now(),
         description: taskDescription,
@@ -129,6 +154,7 @@ export function WorkLogView() {
       // Add the new entry to the top of the list
       setEntries([newEntry, ...entries]);
       setTaskDescription(""); // Clear the input field
+      setSelectedTaskId(null); // Clear selected task
       localStorage.removeItem('worklog-draft'); // Clear the saved draft
     } catch (err) {
       setError(t('worklog:errors.addFailed', { error: String(err) }));
@@ -292,20 +318,40 @@ export function WorkLogView() {
           <form onSubmit={handleSubmit} className="mb-8">
             <Field>
               <Label>{t('worklog:form.label')}</Label>
-              <div className="flex gap-3 items-end">
-                <div className="flex-1">
-                  <Input
-                    type="text"
-                    value={taskDescription}
-                    onChange={(e) => setTaskDescription(e.target.value)}
-                    placeholder={t('worklog:form.placeholder')}
-                    disabled={isLoading}
-                  />
-                </div>
+              <div className="flex gap-3 items-center">
+                <Input
+                  type="text"
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                  placeholder={t('worklog:form.placeholder')}
+                  disabled={isLoading}
+                  className="flex-1"
+                />
                 <Button type="submit" disabled={isLoading} color="blue">
                   {isLoading ? t('worklog:form.submitting') : t('worklog:form.submit')}
                 </Button>
               </div>
+              {sprintTasks.length > 0 && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">Link to task:</span>
+                  <select
+                    value={selectedTaskId ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedTaskId(val === '' ? null : Number(val));
+                    }}
+                    disabled={isLoading}
+                    className="flex-1 text-xs rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">No task</option>
+                    {sprintTasks.map((task) => (
+                      <option key={task.id} value={task.id}>
+                        {task.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </Field>
           </form>
         )}

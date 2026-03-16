@@ -11,10 +11,13 @@ pub(crate) fn language_instruction(language_code: &str) -> &'static str {
 
 pub(crate) fn build_system_prompt(language_code: &str) -> String {
     format!(
-        "Summarize the user's work day in 2-4 short bullet points. \
+        "Summarize the user's work day in short summarized bullet points. \
+Use as many bullets as needed to reflect the actual variety of work — fewer bullets for a focused day, more for a varied one. \
+Tasks that appear multiple times or have more detail deserve more attention; tasks mentioned only once get at most a brief mention. \
 Each bullet covers one main topic or task. \
 Be brief and factual — this is a personal reminder for the user, not a report for others. \
 No intro sentence, no conclusion, no time estimates, no markdown formatting except a dash (-) per bullet. \
+Do not list all tasks the user did. \
 {}",
         language_instruction(language_code)
     )
@@ -391,7 +394,7 @@ pub async fn generate_summary(entries: Vec<(String, String)>, date: &str, langua
 
 /// Build the user prompt from work entries
 pub(crate) fn build_user_prompt(entries: &[WorkEntry], date: &str) -> String {
-    let mut prompt = format!("Work entries for {}:\n\n", date);
+    let mut prompt = format!("Work entries for {} ({} total):\n\n", date, entries.len());
 
     for entry in entries {
         // Parse timestamp and format time
@@ -678,6 +681,7 @@ mod tests {
         ];
         let prompt = build_user_prompt(&entries, "2026-03-11");
         assert!(prompt.contains("2026-03-11"), "Should contain the date");
+        assert!(prompt.contains("2 total"), "Should contain total entry count");
         assert!(prompt.contains("Fixed login bug"), "Should contain first description");
         assert!(prompt.contains("Wrote unit tests"), "Should contain second description");
     }
