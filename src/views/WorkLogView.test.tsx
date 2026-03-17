@@ -217,4 +217,25 @@ describe("WorkLogView", () => {
       expect(localStorage.getItem("worklog-draft")).toBe("Draft entry");
     });
   });
+
+  it("clicking an entry fills the input with its description", async () => {
+    const user = userEvent.setup();
+
+    const { default: Database } = await import("@tauri-apps/plugin-sql");
+    const db = await (Database.load as Mock)();
+    (db.select as Mock)
+      .mockResolvedValueOnce([{ id: 1, description: "Refactored auth module", timestamp: "2026-03-11T09:00:00Z", source: "manual", linked_task_id: null }])
+      .mockResolvedValueOnce([]); // auto entries
+
+    render(<WorkLogView />);
+
+    await waitFor(() => screen.getByText("Refactored auth module"));
+
+    const row = screen.getByText("Refactored auth module").closest("tr")!;
+    await user.click(row);
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox")).toHaveValue("Refactored auth module");
+    });
+  });
 });
