@@ -13,6 +13,22 @@ interface AISummary {
   updated_at: string;
 }
 
+interface SummaryItem {
+  label: string;
+  summary: string;
+}
+
+function parseSummary(raw: string): SummaryItem[] {
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as SummaryItem[];
+  } catch {
+    // Legacy plain-text — wrap as single unlabeled item
+    return [{ label: '', summary: raw }];
+  }
+  return [{ label: '', summary: raw }];
+}
+
 export function AISummaryView() {
   const { t, i18n } = useTranslation(['aiSummary', 'common']);
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -78,57 +94,70 @@ export function AISummaryView() {
     setCopySuccess(false);
 
     try {
-      // Fetch work entries for the selected date from database
       const database = await getDb();
 
-      // Fetch manual entries
-      const manualEntries = await database.select<Array<{ description: string; timestamp: string }>>(
-        "SELECT description, timestamp FROM work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
+      // Fetch manual entries with linked task info
+      const manualEntries = await database.select<Array<{ description: string; timestamp: string; task_id: number | null; task_title: string | null }>>(
+        `SELECT we.description, we.timestamp, wl.task_id, st.title as task_title
+         FROM work_entries we
+         LEFT JOIN sprint_task_work_links wl ON wl.entry_source = 'manual' AND wl.entry_id = we.id
+         LEFT JOIN sprint_tasks st ON st.id = wl.task_id
+         WHERE DATE(we.timestamp) = ?
+         ORDER BY we.timestamp ASC`,
         [selectedDate]
       );
 
-      // Fetch auto-generated entries
-      const autoEntries = await database.select<Array<{ description: string; timestamp: string }>>(
-        "SELECT description, timestamp FROM auto_work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
+      // Fetch auto entries with linked task info
+      const autoEntries = await database.select<Array<{ description: string; timestamp: string; task_id: number | null; task_title: string | null }>>(
+        `SELECT awe.description, awe.timestamp, wl.task_id, st.title as task_title
+         FROM auto_work_entries awe
+         LEFT JOIN sprint_task_work_links wl ON wl.entry_source = 'auto' AND wl.entry_id = awe.id
+         LEFT JOIN sprint_tasks st ON st.id = wl.task_id
+         WHERE DATE(awe.timestamp) = ?
+         ORDER BY awe.timestamp ASC`,
         [selectedDate]
       );
 
-      // Combine both types of entries and sort by timestamp
-      const entries = [...manualEntries, ...autoEntries].sort((a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      const allEntries = [...manualEntries, ...autoEntries].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
 
-      if (entries.length === 0) {
+      if (allEntries.length === 0) {
         setError(t('aiSummary:errors.noEntries', { date: formatDate(selectedDate) }));
         setIsLoading(false);
         return;
       }
 
-      if (entries.length < 2) {
+      if (allEntries.length < 2) {
         setError(t('aiSummary:errors.minEntries', {
-          count: entries.length,
+          count: allEntries.length,
           date: formatDate(selectedDate)
         }));
         setIsLoading(false);
         return;
       }
 
-      // Convert entries to format expected by backend: Vec<(String, String)>
-      const entryTuples: [string, string][] = entries.map(entry => [
-        entry.description,
-        entry.timestamp
-      ]);
+      // Group by task_id
+      const groupMap = new Map<string, { taskTitle: string | null; entries: [string, string][] }>();
+      for (const entry of allEntries) {
+        const key = entry.task_id != null ? String(entry.task_id) : '__ungrouped__';
+        if (!groupMap.has(key)) {
+          groupMap.set(key, { taskTitle: entry.task_title ?? null, entries: [] });
+        }
+        groupMap.get(key)!.entries.push([entry.description, entry.timestamp]);
+      }
 
-      // Call Tauri command to generate summary
-      const generatedSummary = await invoke<string>('generate_daily_summary', {
-        entries: entryTuples,
+      const groups: [string | null, [string, string][]][] = Array.from(groupMap.values()).map(
+        (g) => [g.taskTitle, g.entries]
+      );
+
+      const generatedSummary = await invoke<string>('generate_grouped_daily_summary', {
+        groups,
         date: selectedDate,
         language: i18n.language,
       });
 
       setSummary(generatedSummary);
-
-      // Save summary to database
       await saveSummary(generatedSummary);
     } catch (err) {
       console.error('Failed to generate summary:', err);
@@ -140,7 +169,9 @@ export function AISummaryView() {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(summary);
+      const items = parseSummary(summary);
+      const text = items.map(item => item.label ? `${item.label}\n${item.summary}` : item.summary).join('\n\n');
+      await navigator.clipboard.writeText(text);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
@@ -255,9 +286,16 @@ export function AISummaryView() {
 
           <div className="flex-1 scrollable">
             <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-              <pre className="whitespace-pre-wrap font-sans text-sm text-zinc-950 dark:text-white">
-                {summary}
-              </pre>
+              <div className="flex flex-col gap-3">
+                {parseSummary(summary).map((item, i) => (
+                  <div key={i} className="flex flex-col gap-0.5">
+                    {item.label && (
+                      <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">{item.label}</span>
+                    )}
+                    <p className="text-sm text-zinc-950 dark:text-white leading-relaxed">{item.summary}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

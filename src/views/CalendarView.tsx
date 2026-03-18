@@ -9,6 +9,23 @@ import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
 import { TooltipHint } from '../components/TooltipHint';
 import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
 
+interface SummaryItem {
+  label: string;
+  summary: string;
+}
+
+function parseSummary(raw: string | null): SummaryItem[] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as SummaryItem[];
+  } catch {
+    // Legacy plain-text summary — wrap as single unlabeled item
+    return [{ label: '', summary: raw }];
+  }
+  return null;
+}
+
 interface DayData {
   date: string; // YYYY-MM-DD
   summary: string | null;
@@ -124,7 +141,16 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
       <div className="px-5 py-4">
         {day.summary ? (
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line">{day.summary}</p>
+            <div className="flex flex-col gap-2">
+              {(parseSummary(day.summary) ?? [{ label: '', summary: day.summary }]).map((item, i) => (
+                <div key={i} className="flex flex-col gap-0.5">
+                  {item.label && (
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">{item.label}</span>
+                  )}
+                  <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{item.summary}</p>
+                </div>
+              ))}
+            </div>
             {error && (
               <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
             )}
@@ -248,28 +274,52 @@ export function CalendarView() {
   const handleGenerate = useCallback(async (date: string) => {
     const database = await getDb();
 
-    // Fetch work entries
-    const manualEntries = await database.select<Array<{ description: string; timestamp: string }>>(
-      "SELECT description, timestamp FROM work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
+    // Fetch manual entries with their linked task title (if any)
+    const manualEntries = await database.select<Array<{ description: string; timestamp: string; task_id: number | null; task_title: string | null }>>(
+      `SELECT we.description, we.timestamp, wl.task_id, st.title as task_title
+       FROM work_entries we
+       LEFT JOIN sprint_task_work_links wl ON wl.entry_source = 'manual' AND wl.entry_id = we.id
+       LEFT JOIN sprint_tasks st ON st.id = wl.task_id
+       WHERE DATE(we.timestamp) = ?
+       ORDER BY we.timestamp ASC`,
       [date]
     );
-    const autoEntries = await database.select<Array<{ description: string; timestamp: string }>>(
-      "SELECT description, timestamp FROM auto_work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
+    // Fetch auto entries with their linked task title (if any)
+    const autoEntries = await database.select<Array<{ description: string; timestamp: string; task_id: number | null; task_title: string | null }>>(
+      `SELECT awe.description, awe.timestamp, wl.task_id, st.title as task_title
+       FROM auto_work_entries awe
+       LEFT JOIN sprint_task_work_links wl ON wl.entry_source = 'auto' AND wl.entry_id = awe.id
+       LEFT JOIN sprint_tasks st ON st.id = wl.task_id
+       WHERE DATE(awe.timestamp) = ?
+       ORDER BY awe.timestamp ASC`,
       [date]
     );
 
-    const entries = [...manualEntries, ...autoEntries].sort(
+    const allEntries = [...manualEntries, ...autoEntries].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    if (entries.length < 1) {
+    if (allEntries.length < 1) {
       throw new Error('No work entries found for this day.');
     }
 
-    const entryTuples: [string, string][] = entries.map((e) => [e.description, e.timestamp]);
+    // Group entries by task_id (null = ungrouped)
+    const groupMap = new Map<string, { taskTitle: string | null; entries: [string, string][] }>();
+    for (const entry of allEntries) {
+      const key = entry.task_id != null ? String(entry.task_id) : '__ungrouped__';
+      if (!groupMap.has(key)) {
+        groupMap.set(key, { taskTitle: entry.task_title ?? null, entries: [] });
+      }
+      groupMap.get(key)!.entries.push([entry.description, entry.timestamp]);
+    }
 
-    const generatedSummary = await invoke<string>('generate_daily_summary', {
-      entries: entryTuples,
+    // Convert to the format expected by generate_grouped_daily_summary
+    const groups: [string | null, [string, string][]][] = Array.from(groupMap.values()).map(
+      (g) => [g.taskTitle, g.entries]
+    );
+
+    const generatedSummary = await invoke<string>('generate_grouped_daily_summary', {
+      groups,
       date,
       language: i18n.language,
     });

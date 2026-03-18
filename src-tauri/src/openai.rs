@@ -392,6 +392,237 @@ pub async fn generate_summary(entries: Vec<(String, String)>, date: &str, langua
     Ok(summary)
 }
 
+/// A group of work entries belonging to one task (or ungrouped)
+pub struct TaskGroup {
+    pub task_title: Option<String>,
+    pub entries: Vec<WorkEntry>,
+}
+
+/// A labeled summary item returned to the frontend
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SummaryItem {
+    pub label: String,
+    pub summary: String,
+}
+
+/// Generate labeled summary items: one per linked task, AI-clustered groups for unlinked entries.
+/// Returns a JSON string: array of {label, summary}.
+pub async fn generate_grouped_summary(
+    task_groups: Vec<TaskGroup>,
+    date: &str,
+    language: &str,
+) -> Result<String, String> {
+    let api_key = env::var("OPENAI_API_KEY")
+        .map_err(|_| "OPENAI_API_KEY not set in environment. Please configure your .env file.".to_string())?;
+
+    let api_url = env::var("OPENAI_API_URL")
+        .unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
+
+    let model = env::var("OPENAI_MODEL")
+        .unwrap_or_else(|_| "gpt-4o-mini".to_string());
+
+    if api_key == "sk-your-api-key-here" || api_key.is_empty() {
+        return Err("Please set a valid OpenAI API key in the .env file.".to_string());
+    }
+
+    if task_groups.is_empty() {
+        return Err(format!("No work entries found for {}.", date));
+    }
+
+    let client = reqwest::Client::new();
+    let endpoint = format!("{}/chat/completions", api_url);
+    let mut items: Vec<SummaryItem> = Vec::new();
+
+    for group in &task_groups {
+        if group.entries.is_empty() {
+            continue;
+        }
+
+        match &group.task_title {
+            Some(task_title) => {
+                // Linked task: one call → one bullet, label is the task name
+                let system_prompt = build_linked_task_system_prompt(language);
+                let user_message = build_linked_task_user_prompt(task_title, &group.entries, date);
+
+                let bullet = call_openai_single(
+                    &client, &endpoint, &model, &api_key,
+                    system_prompt, user_message, 120, language,
+                ).await?;
+
+                items.push(SummaryItem {
+                    label: task_title.clone(),
+                    summary: bullet,
+                });
+            }
+            None => {
+                // Unlinked entries: one call → AI clusters them and returns JSON array of {label, summary}
+                let system_prompt = build_unlinked_system_prompt(language);
+                let user_message = build_unlinked_user_prompt(&group.entries, date);
+
+                let raw = call_openai_single(
+                    &client, &endpoint, &model, &api_key,
+                    system_prompt, user_message, 400, language,
+                ).await?;
+
+                // Parse the JSON array the AI returns
+                let parsed: Vec<SummaryItem> = serde_json::from_str(&raw)
+                    .map_err(|e| format!("Failed to parse unlinked summary JSON: {}. Raw: {}", e, raw))?;
+
+                items.extend(parsed);
+            }
+        }
+    }
+
+    if items.is_empty() {
+        return Err("No summary could be generated.".to_string());
+    }
+
+    serde_json::to_string(&items)
+        .map_err(|e| format!("Failed to serialize summary items: {}", e))
+}
+
+/// Make a single OpenAI chat completion call and return the trimmed text response.
+async fn call_openai_single(
+    client: &reqwest::Client,
+    endpoint: &str,
+    model: &str,
+    api_key: &str,
+    system_prompt: String,
+    user_message: String,
+    max_tokens: u32,
+    _language: &str,
+) -> Result<String, String> {
+    let request = OpenAIRequest {
+        model: model.to_string(),
+        messages: vec![
+            Message {
+                role: "system".to_string(),
+                content: MessageContent::Text(system_prompt),
+            },
+            Message {
+                role: "user".to_string(),
+                content: MessageContent::Text(user_message),
+            },
+        ],
+        temperature: 0.3,
+        max_tokens,
+    };
+
+    let request_timestamp = Utc::now().to_rfc3339();
+    let request_json = serde_json::to_string_pretty(&request.messages)
+        .unwrap_or_else(|_| "Failed to serialize request".to_string());
+
+    log::info!("📤 Sending grouped summary request");
+    let start_time = std::time::Instant::now();
+
+    let response = client
+        .post(endpoint)
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("Content-Type", "application/json")
+        .json(&request)
+        .send()
+        .await;
+
+    let duration_ms = start_time.elapsed().as_millis() as i64;
+    let response_timestamp = Utc::now().to_rfc3339();
+
+    let response = match response {
+        Ok(r) => r,
+        Err(e) => {
+            let error_msg = format!("Failed to connect to OpenAI API: {}", e);
+            log::error!("❌ API request failed: {}", error_msg);
+            let _ = log_api_call(
+                "workrecall.db", &request_timestamp, Some(&response_timestamp),
+                endpoint, model, "grouped_summary", &request_json,
+                0.3, max_tokens, None, "error", Some(&error_msg), Some(duration_ms), None, 0,
+            ).await;
+            return Err(error_msg);
+        }
+    };
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let error_text = response.text().await.unwrap_or_default();
+        let error_msg = match status.as_u16() {
+            401 => "Invalid API key. Please check your OPENAI_API_KEY in .env file.".to_string(),
+            429 => "Rate limit exceeded. Please try again in a moment.".to_string(),
+            _ => format!("OpenAI API error ({}): {}", status, error_text),
+        };
+        return Err(error_msg);
+    }
+
+    let api_response: OpenAIResponse = response.json().await
+        .map_err(|e| format!("Failed to parse OpenAI response: {}", e))?;
+
+    let text = api_response.choices
+        .into_iter()
+        .next()
+        .and_then(|c| match c.message.content {
+            MessageContent::Text(t) => Some(t.trim().to_string()),
+            _ => None,
+        })
+        .ok_or("No response from OpenAI")?;
+
+    let _ = log_api_call(
+        "workrecall.db", &request_timestamp, Some(&response_timestamp),
+        endpoint, model, "grouped_summary", &request_json,
+        0.3, max_tokens, Some(&text), "success", None, Some(duration_ms),
+        api_response.usage.as_ref(), 0,
+    ).await;
+
+    Ok(text)
+}
+
+fn build_linked_task_system_prompt(language_code: &str) -> String {
+    format!(
+        "You will receive work log entries for a single named task. \
+Write exactly one concise sentence (no leading dash, no bullet) summarizing what was done. \
+Be brief and factual — this is a personal reminder, not a report. \
+{}",
+        language_instruction(language_code)
+    )
+}
+
+fn build_linked_task_user_prompt(task_title: &str, entries: &[WorkEntry], date: &str) -> String {
+    let mut prompt = format!("Task: {}\nWork entries for {} ({} total):\n\n", task_title, date, entries.len());
+    for entry in entries {
+        let time = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&entry.timestamp) {
+            dt.format("%I:%M %p").to_string()
+        } else {
+            entry.timestamp.clone()
+        };
+        prompt.push_str(&format!("{}: {}\n", time, entry.description));
+    }
+    prompt
+}
+
+fn build_unlinked_system_prompt(language_code: &str) -> String {
+    format!(
+        "You will receive work log entries that are not linked to any specific task. \
+Group them by topic and return a JSON array. Each element must have:\
+- \"label\": a short (2-5 word) topic label\
+- \"summary\": one concise sentence describing what was done\
+Return only the JSON array, no other text. Example: \
+[{{\"label\":\"Code review\",\"summary\":\"Reviewed pull requests for the auth module.\"}},\
+{{\"label\":\"Meetings\",\"summary\":\"Attended standup and planning session.\"}}]\
+{}",
+        language_instruction(language_code)
+    )
+}
+
+fn build_unlinked_user_prompt(entries: &[WorkEntry], date: &str) -> String {
+    let mut prompt = format!("Unlinked work entries for {} ({} total):\n\n", date, entries.len());
+    for entry in entries {
+        let time = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&entry.timestamp) {
+            dt.format("%I:%M %p").to_string()
+        } else {
+            entry.timestamp.clone()
+        };
+        prompt.push_str(&format!("{}: {}\n", time, entry.description));
+    }
+    prompt
+}
+
 /// Build the user prompt from work entries
 pub(crate) fn build_user_prompt(entries: &[WorkEntry], date: &str) -> String {
     let mut prompt = format!("Work entries for {} ({} total):\n\n", date, entries.len());
