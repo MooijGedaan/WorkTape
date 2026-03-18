@@ -61,6 +61,26 @@ async fn generate_daily_summary(
 }
 
 #[tauri::command]
+async fn generate_grouped_daily_summary(
+    // Each group: (optional task_title, vec of (description, timestamp))
+    groups: Vec<(Option<String>, Vec<(String, String)>)>,
+    date: String,
+    language: String,
+) -> Result<String, String> {
+    let task_groups: Vec<openai::TaskGroup> = groups
+        .into_iter()
+        .map(|(task_title, entries)| openai::TaskGroup {
+            task_title,
+            entries: entries
+                .into_iter()
+                .map(|(description, timestamp)| openai::WorkEntry { description, timestamp })
+                .collect(),
+        })
+        .collect();
+    openai::generate_grouped_summary(task_groups, &date, &language).await
+}
+
+#[tauri::command]
 fn test_screenshot_capture() -> Result<Vec<screenshot::ScreenshotData>, String> {
     // Check permissions (mainly for macOS)
     if !screenshot::check_screen_recording_permission() {
@@ -1687,6 +1707,7 @@ pub fn run() {
             skip_prompt,
             set_prompt_interval,
             generate_daily_summary,
+            generate_grouped_daily_summary,
             test_screenshot_capture,
             capture_and_analyze_screen,
             start_auto_logging,
