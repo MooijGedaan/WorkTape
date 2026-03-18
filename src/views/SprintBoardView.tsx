@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { ClockIcon } from '../components/icons';
+import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
+import { TooltipHint } from '../components/TooltipHint';
+import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../components/catalyst/button';
@@ -658,6 +661,8 @@ function BoardColumn({
 
 export function SprintBoardView() {
   const { t } = useTranslation('sprintboard');
+  const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
+  const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [tasks, setTasks] = useState<SprintTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -684,6 +689,20 @@ export function SprintBoardView() {
   useEffect(() => {
     loadTasks();
   }, []);
+
+  useEffect(() => {
+    if (isAllDisabled) return;
+    const hints: HintId[] = ['sprint-drag-drop', 'sprint-next-action'];
+    const first = hints.find(h => !isSeen(h));
+    if (!first) return;
+    const timer = setTimeout(() => setActiveHint(first), 500);
+    return () => clearTimeout(timer);
+  }, []); // mount-only
+
+  const handleHintDismiss = () => {
+    if (activeHint) markSeen(activeHint);
+    setActiveHint(null);
+  };
 
   const handleCreate = async (title: string, description: string | null, priority: PriorityKey) => {
     await invoke('create_sprint_task', { title, description, priority });
@@ -805,7 +824,21 @@ export function SprintBoardView() {
   const tasksByStatus = (status: StatusKey) =>
     filteredTasks.filter((t) => t.status === status);
 
+  const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
+
   return (
+    <>
+    {activeHintDef && (
+      <TooltipHint
+        show={activeHint !== null}
+        title={activeHintDef.title}
+        body={activeHintDef.body}
+        icon={activeHintDef.icon}
+        accentColor={activeHintDef.accentColor}
+        onDismiss={handleHintDismiss}
+        onDisableAll={() => { disableAll(); setActiveHint(null); }}
+      />
+    )}
     <div className="flex flex-col h-full min-h-0 gap-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
@@ -882,5 +915,6 @@ export function SprintBoardView() {
         onResolve={handleResolveNextAction}
       />
     </div>
+    </>
   );
 }

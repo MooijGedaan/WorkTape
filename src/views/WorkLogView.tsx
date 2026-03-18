@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTauriEvent } from '../hooks/useTauriEvent';
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,9 @@ import { Text } from '../components/catalyst/text';
 import { XMarkIcon, ClockIcon } from '../components/icons';
 import { UndoNotification } from '../components/UndoNotification';
 import { getDb } from '../hooks/useDatabase';
+import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
+import { TooltipHint } from '../components/TooltipHint';
+import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
 
 interface SprintTask {
   id: number;
@@ -32,6 +35,9 @@ function toLocalDateString(d: Date): string {
 
 export function WorkLogView() {
   const { t, i18n } = useTranslation(['worklog', 'notifications', 'common']);
+  const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
+  const [activeHint, setActiveHint] = useState<HintId | null>(null);
+  const hasShownDataHint = useRef(false);
   const [taskDescription, setTaskDescription] = useState("");
   const [entries, setEntries] = useState<WorkEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,6 +87,29 @@ export function WorkLogView() {
       localStorage.removeItem('worklog-draft');
     }
   }, [taskDescription]);
+
+  // Show first unseen data-gated hint once data is loaded
+  useEffect(() => {
+    if (isAllDisabled) return;
+    if (hasShownDataHint.current) return;
+    if (entries.length === 0) return; // wait for data
+
+    const candidateHints: HintId[] = [];
+    if (!isSeen('worklog-click-to-edit')) candidateHints.push('worklog-click-to-edit');
+    if (sprintTasks.length > 0 && !isSeen('worklog-sprint-linking')) candidateHints.push('worklog-sprint-linking');
+    if (isDayEnded && !isSeen('worklog-regenerate-summary')) candidateHints.push('worklog-regenerate-summary');
+
+    const first = candidateHints[0];
+    if (!first) return;
+    hasShownDataHint.current = true;
+    const timer = setTimeout(() => setActiveHint(first), 500);
+    return () => clearTimeout(timer);
+  }, [entries.length, sprintTasks.length, isDayEnded]); // re-run as data loads
+
+  const handleHintDismiss = () => {
+    if (activeHint) markSeen(activeHint);
+    setActiveHint(null);
+  };
 
   const loadEntries = async () => {
     try {
@@ -289,8 +318,21 @@ export function WorkLogView() {
     }).format(date);
   };
 
+  const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
+
   return (
     <>
+      {activeHintDef && (
+        <TooltipHint
+          show={activeHint !== null}
+          title={activeHintDef.title}
+          body={activeHintDef.body}
+          icon={activeHintDef.icon}
+          accentColor={activeHintDef.accentColor}
+          onDismiss={handleHintDismiss}
+          onDisableAll={() => { disableAll(); setActiveHint(null); }}
+        />
+      )}
       <UndoNotification
         show={showUndoNotification}
         message={t('notifications:entryDeleted')}

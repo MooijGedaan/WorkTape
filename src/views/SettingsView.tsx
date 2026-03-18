@@ -16,11 +16,16 @@ import { useTheme, type Theme } from '../hooks/useTheme';
 import { useNavigation } from '../hooks/useNavigation';
 import { ChevronDownIcon } from '../components/icons';
 import { ErrorNotification } from '../components/ErrorNotification';
+import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
+import { TooltipHint } from '../components/TooltipHint';
+import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
 
 export function SettingsView() {
   const { t } = useTranslation(['settings', 'common']);
   const { theme, setTheme } = useTheme();
   const { showOnboarding } = useNavigation();
+  const { isSeen, markSeen, isAllDisabled, disableAll, enableAll } = useTooltipHints();
+  const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [developerOpen, setDeveloperOpen] = useState(false);
   const [launchOnStartup, setLaunchOnStartup] = useState<boolean>(false);
   const [promptInterval, setPromptInterval] = useState<number>(30);
@@ -45,6 +50,20 @@ export function SettingsView() {
   useEffect(() => {
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    if (isAllDisabled) return;
+    const hints: HintId[] = ['settings-auto-capture'];
+    const first = hints.find(h => !isSeen(h));
+    if (!first) return;
+    const timer = setTimeout(() => setActiveHint(first), 500);
+    return () => clearTimeout(timer);
+  }, []); // mount-only
+
+  const handleHintDismiss = () => {
+    if (activeHint) markSeen(activeHint);
+    setActiveHint(null);
+  };
 
   // Poll debug stats when auto-logging is enabled
   useEffect(() => {
@@ -277,7 +296,21 @@ export function SettingsView() {
     }
   };
 
+  const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
+
   return (
+    <>
+    {activeHintDef && (
+      <TooltipHint
+        show={activeHint !== null}
+        title={activeHintDef.title}
+        body={activeHintDef.body}
+        icon={activeHintDef.icon}
+        accentColor={activeHintDef.accentColor}
+        onDismiss={handleHintDismiss}
+        onDisableAll={() => { disableAll(); setActiveHint(null); }}
+      />
+    )}
     <div className="scrollable h-full w-full">
       <ErrorNotification
         show={errorMessage !== null}
@@ -517,6 +550,25 @@ export function SettingsView() {
 
         <Divider className="my-6" />
 
+        {/* Feature tips */}
+        <div>
+          <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
+            Feature tips
+          </h3>
+          <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Small hints that surface when you visit a page for the first time.
+          </Text>
+          <Button
+            onClick={isAllDisabled ? enableAll : disableAll}
+            color="zinc"
+            className="mt-3"
+          >
+            {isAllDisabled ? t('common:tooltipHints.enableAll') : t('common:tooltipHints.disableAll')}
+          </Button>
+        </div>
+
+        <Divider className="my-6" />
+
         {/* Developer section (collapsible) */}
         <div>
           <button
@@ -647,5 +699,6 @@ export function SettingsView() {
         </div>
       </div>
     </div>
+    </>
   );
 }

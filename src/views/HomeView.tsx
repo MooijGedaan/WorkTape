@@ -5,6 +5,9 @@ import { Text } from '../components/catalyst/text';
 import { Button } from '../components/catalyst/button';
 import { useNavigation } from '../hooks/useNavigation.tsx';
 import { getDb } from '../hooks/useDatabase';
+import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
+import { TooltipHint } from '../components/TooltipHint';
+import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
 
 interface Stats {
   totalEntries: number;
@@ -15,6 +18,8 @@ interface Stats {
 export function HomeView() {
   const { t } = useTranslation(['home', 'common']);
   const { goToWorkLog } = useNavigation();
+  const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
+  const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [stats, setStats] = useState<Stats>({
     totalEntries: 0,
     thisWeekEntries: 0,
@@ -25,6 +30,20 @@ export function HomeView() {
   useEffect(() => {
     loadStats();
   }, []);
+
+  useEffect(() => {
+    if (isAllDisabled) return;
+    const hints: HintId[] = ['home-stats'];
+    const first = hints.find(h => !isSeen(h));
+    if (!first) return;
+    const timer = setTimeout(() => setActiveHint(first), 500);
+    return () => clearTimeout(timer);
+  }, []); // mount-only
+
+  const handleDismiss = () => {
+    if (activeHint) markSeen(activeHint);
+    setActiveHint(null);
+  };
 
   const loadStats = async () => {
     try {
@@ -91,7 +110,21 @@ export function HomeView() {
     }
   };
 
+  const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
+
   return (
+    <>
+    {activeHintDef && (
+      <TooltipHint
+        show={activeHint !== null}
+        title={activeHintDef.title}
+        body={activeHintDef.body}
+        icon={activeHintDef.icon}
+        accentColor={activeHintDef.accentColor}
+        onDismiss={handleDismiss}
+        onDisableAll={() => { disableAll(); setActiveHint(null); }}
+      />
+    )}
     <div className="h-full">
       <Heading>{t('home:title')}</Heading>
       <Text className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
@@ -137,5 +170,6 @@ export function HomeView() {
         </Button>
       </div>
     </div>
+    </>
   );
 }

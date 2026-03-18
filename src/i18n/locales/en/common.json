@@ -32,6 +32,11 @@
     "today": "Today",
     "yesterday": "Yesterday"
   },
+  "tooltipHints": {
+    "gotIt": "Got it",
+    "disableAll": "Disable all tips",
+    "enableAll": "Re-enable tips"
+  },
   "premium": {
     "badge": "Premium",
     "title": "Premium Feature",
