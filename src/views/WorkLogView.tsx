@@ -27,6 +27,7 @@ interface WorkEntry {
   source?: 'manual' | 'auto'; // Track whether entry was manual or auto-generated
   screenshots_count?: number; // For auto entries
   next_action?: string | null;
+  linked_task_id?: number | null;
 }
 
 function toLocalDateString(d: Date): string {
@@ -117,9 +118,9 @@ export function WorkLogView() {
       setError(null);
       const database = await getDb();
 
-      // Fetch manual entries
+      // Fetch manual entries with linked task id
       const manualEntries = await database.select<WorkEntry[]>(
-        "SELECT id, description, timestamp, next_action, 'manual' as source FROM work_entries"
+        "SELECT we.id, we.description, we.timestamp, we.next_action, 'manual' as source, wl.task_id as linked_task_id FROM work_entries we LEFT JOIN sprint_task_work_links wl ON wl.entry_source = 'manual' AND wl.entry_id = we.id"
       );
 
       // Fetch auto-generated entries
@@ -265,6 +266,15 @@ export function WorkLogView() {
   const handleCloseNotification = () => {
     setShowUndoNotification(false);
     // Don't clear the timeout - let the deletion proceed
+  };
+
+  const handleEntryClick = (entry: WorkEntry) => {
+    if (isDayEnded) return;
+    setTaskDescription(entry.description);
+    setSelectedTaskId(entry.linked_task_id ?? null);
+    // Scroll to the top / focus the input
+    const inputEl = document.querySelector<HTMLInputElement>('input[type="text"]');
+    inputEl?.focus();
   };
 
   const [regeneratingSummaryDate, setRegeneratingSummaryDate] = useState<string | null>(null);
@@ -435,7 +445,15 @@ export function WorkLogView() {
                       </thead>
                       <tbody>
                         {dayEntries.map((entry) => (
-                          <tr key={`${entry.source}-${entry.id}`}>
+                          <tr
+                            key={`${entry.source}-${entry.id}`}
+                            onClick={() => handleEntryClick(entry)}
+                            title={isDayEnded ? undefined : t('worklog:list.clickToEdit', 'Click to edit this entry')}
+                            className={[
+                              'transition-colors',
+                              !isDayEnded && 'cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:font-medium',
+                            ].filter(Boolean).join(' ')}
+                          >
                             <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-zinc-500 dark:text-zinc-400 font-medium whitespace-nowrap align-top">
                               {formatTimestamp(entry.timestamp)}
                             </td>
@@ -459,7 +477,7 @@ export function WorkLogView() {
                             </td>
                             <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-right whitespace-nowrap align-top">
                               <button
-                                onClick={() => handleDelete(entry.id)}
+                                onClick={(e) => { e.stopPropagation(); handleDelete(entry.id); }}
                                 disabled={isLoading}
                                 className="text-zinc-400 hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 aria-label={t('common:actions.delete')}
