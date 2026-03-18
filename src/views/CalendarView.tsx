@@ -5,6 +5,9 @@ import { useTauriEvent } from '../hooks/useTauriEvent';
 import { getDb } from '../hooks/useDatabase';
 import { Heading } from '../components/catalyst/heading';
 import { Text } from '../components/catalyst/text';
+import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
+import { TooltipHint } from '../components/TooltipHint';
+import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
 
 interface DayData {
   date: string; // YYYY-MM-DD
@@ -166,6 +169,8 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
 
 export function CalendarView() {
   const { i18n } = useTranslation();
+  const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
+  const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [weeks, setWeeks] = useState<WeekGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -226,6 +231,20 @@ export function CalendarView() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (isAllDisabled) return;
+    const hints: HintId[] = ['calendar-week-navigation'];
+    const first = hints.find(h => !isSeen(h));
+    if (!first) return;
+    const timer = setTimeout(() => setActiveHint(first), 500);
+    return () => clearTimeout(timer);
+  }, []); // mount-only
+
+  const handleDismiss = () => {
+    if (activeHint) markSeen(activeHint);
+    setActiveHint(null);
+  };
+
   const handleGenerate = useCallback(async (date: string) => {
     const database = await getDb();
 
@@ -265,7 +284,21 @@ export function CalendarView() {
     await loadData();
   }, [loadData]);
 
+  const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
+
   return (
+    <>
+    {activeHintDef && (
+      <TooltipHint
+        show={activeHint !== null}
+        title={activeHintDef.title}
+        body={activeHintDef.body}
+        icon={activeHintDef.icon}
+        accentColor={activeHintDef.accentColor}
+        onDismiss={handleDismiss}
+        onDisableAll={() => { disableAll(); setActiveHint(null); }}
+      />
+    )}
     <div className="flex flex-col h-full overflow-hidden w-full">
       <div className="flex-shrink-0 mb-6">
         <Heading>Work Calendar</Heading>
@@ -293,5 +326,6 @@ export function CalendarView() {
         </div>
       )}
     </div>
+    </>
   );
 }

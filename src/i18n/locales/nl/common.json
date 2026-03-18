@@ -32,6 +32,11 @@
     "today": "Vandaag",
     "yesterday": "Gisteren"
   },
+  "tooltipHints": {
+    "gotIt": "Begrepen",
+    "disableAll": "Alle tips uitschakelen",
+    "enableAll": "Tips opnieuw inschakelen"
+  },
   "premium": {
     "badge": "Premium",
     "title": "Premium Functie",

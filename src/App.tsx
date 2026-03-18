@@ -2,6 +2,7 @@ import { useState } from 'react';
 import "./App.css";
 import { NavigationProvider } from './hooks/useNavigation.tsx';
 import { ThemeProvider } from './hooks/useTheme';
+import { TooltipHintProvider } from './hooks/useTooltipHints';
 import { ApplicationLayout } from './components/ApplicationLayout';
 import { ViewRouter } from './components/ViewRouter';
 import { OnboardingModal } from './components/OnboardingModal';
@@ -27,12 +28,14 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
+        <TooltipHintProvider>
         <NavigationProvider onShowOnboarding={handleShowOnboarding}>
           <ApplicationLayout>
             <ViewRouter />
           </ApplicationLayout>
           <OnboardingModal isOpen={onboardingOpen} onClose={handleOnboardingClose} />
         </NavigationProvider>
+        </TooltipHintProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
