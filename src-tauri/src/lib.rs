@@ -1775,13 +1775,6 @@ pub fn run() {
             app.manage(auto_logger);
             println!("💾 AutoLoggerService registered in app state");
 
-            // Show first prompt after 5 seconds (for testing)
-            let app_handle = app.handle().clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_secs(5));
-                let _ = prompt::show_prompt_window(&app_handle);
-            });
-
             Ok(())
         })
         .on_window_event(|window, event| {
