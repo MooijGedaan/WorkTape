@@ -47,7 +47,7 @@ impl AutoLoggerService {
 
     /// Start the automatic logging service
     pub fn start(&self, app_handle: tauri::AppHandle) {
-        println!("🚀 Starting AutoLoggerService...");
+        log::info!("Starting AutoLoggerService...");
         info!("🚀 Starting AutoLoggerService...");
 
         let capture_service = self.capture_service.clone();

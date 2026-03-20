@@ -35,7 +35,8 @@
     "cancel": "Cancel",
     "create": "Create Task",
     "delete": "Delete Task",
-    "confirmDelete": "Are you sure you want to delete this task?"
+    "confirmDelete": "Are you sure you want to delete this task?",
+    "confirmDeleteTitle": "Delete Task"
   },
   "workLinks": {
     "title": "Work Log Links",
@@ -51,5 +52,12 @@
   "empty": {
     "title": "No tasks yet",
     "description": "Click \"Add Task\" to create your first task."
+  },
+  "loading": "Loading…",
+  "relativeTime": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
   }
 }

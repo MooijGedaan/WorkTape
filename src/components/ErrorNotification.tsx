@@ -1,4 +1,5 @@
 import { Transition } from '@headlessui/react'
+import { useTranslation } from 'react-i18next'
 import { XMarkIcon } from './icons'
 
 interface ErrorNotificationProps {
@@ -9,6 +10,7 @@ interface ErrorNotificationProps {
 }
 
 export function ErrorNotification({ show, message, onClose, variant = 'error' }: ErrorNotificationProps) {
+  const { t } = useTranslation('common')
   const isError = variant === 'error'
   return (
     <div
@@ -42,7 +44,7 @@ export function ErrorNotification({ show, message, onClose, variant = 'error' }:
                     onClick={onClose}
                     className="inline-flex rounded-md text-zinc-400 hover:text-zinc-500 focus:outline-2 focus:outline-offset-2 focus:outline-blue-600 dark:hover:text-white dark:focus:outline-blue-500"
                   >
-                    <span className="sr-only">Close</span>
+                    <span className="sr-only">{t('actions.close')}</span>
                     <XMarkIcon aria-hidden="true" className="h-5 w-5" />
                   </button>
                 </div>

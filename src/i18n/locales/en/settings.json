@@ -9,6 +9,7 @@
     "description": "Advanced settings for debugging and development."
   },
   "onboardingModal": {
+    "stepOf": "Step {{step}} of {{total}}",
     "steps": {
       "prompts":     { "title": "Periodic Work Prompts",       "description": "WorkRecall reminds you at regular intervals to log what you're working on. Set your preferred frequency — every 30 minutes is a great starting point." },
       "autoCapture": { "title": "Automatic Work Capture",      "description": "Enable AI-powered automatic capture: WorkRecall takes periodic screenshots, analyzes them with AI, and creates work log entries — all without any manual input." },
@@ -35,10 +36,6 @@
     "disabled": "Disabled"
   },
   "sections": {
-    "notifications": {
-      "title": "Notifications",
-      "comingSoon": "Coming soon: Manage notification preferences."
-    },
     "darkMode": {
       "title": "Display",
       "description": "Choose your preferred color scheme.",
@@ -47,10 +44,58 @@
         "dark": "Dark",
         "system": "System"
       }
-    },
-    "database": {
-      "title": "Database",
-      "comingSoon": "Coming soon: Database backup and export options."
     }
+  },
+  "autoLogging": {
+    "title": "Automatic Work Logging",
+    "description": "Automatically capture and analyze your work activity using AI.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "screenshotsPerHour": "Screenshots per hour",
+    "screenshotsDescription": "How many times per hour to capture screenshots (when screen changes). Higher values = more granular tracking, but more storage needed.",
+    "everySeconds": "Every {{seconds}} seconds",
+    "aiAnalysesPerDay": "AI analyses per day",
+    "aiAnalysesDescription": "How many times per day to run AI analysis on captured screenshots. Each analysis consumes one OpenAI API request and creates a work log entry.",
+    "everyMinutes": "Every {{minutes}} minutes",
+    "apiUsageToday": "API usage today: {{used}} / {{limit}}",
+    "saveCaptureSettings": "Save Capture Settings",
+    "screenshotsValidation": "Screenshots per hour must be between 1 and 3600",
+    "apiRequestsValidation": "API requests per day must be between 1 and 1440",
+    "saveSuccess": "Auto-capture settings saved successfully!",
+    "howItWorks": "How it works:",
+    "howItWorksItems": {
+      "screenshots": "Screenshots taken at your configured rate (only when screen changes)",
+      "aiAnalysis": "AI analyzes at your configured interval and creates work log entries",
+      "privacy": "Screenshots deleted after analysis (privacy-first)",
+      "idle": "Automatically pauses when computer is idle (5+ minutes)"
+    }
+  },
+  "featureTips": {
+    "title": "Feature tips",
+    "description": "Small hints that surface when you visit a page for the first time."
+  },
+  "debug": {
+    "title": "Debug Mode",
+    "description": "Store full API requests (including screenshots) for debugging purposes.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "warningTitle": "Warning: Storage Impact",
+    "warningBody": "Debug mode stores full API requests including base64-encoded screenshots. This will significantly increase database size (5-20MB per request with 10 screenshots).",
+    "warningEstimate": "With {{requests}} requests per day, expect ~{{gb}} GB per day. Old debug logs are automatically deleted after the retention period.",
+    "retentionLabel": "Debug logs retention period (days)",
+    "retentionDescription": "Debug logs older than this will be automatically deleted daily to prevent database bloat.",
+    "retentionValidation": "Retention days must be between 1 and 30",
+    "saveSuccess": "Debug settings saved successfully!",
+    "cleanupSuccess": "Cleaned up {{count}} old debug log entries",
+    "cleaning": "Cleaning...",
+    "cleanupNow": "Cleanup Now"
+  },
+  "developerTools": {
+    "title": "Developer tools",
+    "description": "These actions are intended for development and testing only.",
+    "unendDay": "Un-end today",
+    "unending": "Un-ending…",
+    "dayEnded": "Today is currently ended. Click to reopen it.",
+    "dayNotEnded": "Today is not ended."
   }
 }

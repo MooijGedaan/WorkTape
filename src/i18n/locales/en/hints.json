@@ -1,0 +1,30 @@
+{
+  "worklog-click-to-edit": {
+    "title": "Click any entry to edit",
+    "body": "Tap a work log entry to update its description or next action inline."
+  },
+  "worklog-sprint-linking": {
+    "title": "Link entries to sprint tasks",
+    "body": "Use the task selector below the input to associate new entries with an active sprint task."
+  },
+  "sprint-drag-drop": {
+    "title": "Drag to move tasks",
+    "body": "Drag and drop cards between columns to update their status instantly."
+  },
+  "sprint-next-action": {
+    "title": "Track your next action",
+    "body": "Open a task and set a \"next action\" so you always know what to do when you return."
+  },
+  "calendar-week-navigation": {
+    "title": "Browse past weeks",
+    "body": "Scroll down to see earlier weeks. Each day shows your entry count and AI summary."
+  },
+  "home-stats": {
+    "title": "Your logging streak",
+    "body": "WorkRecall tracks your daily logging streak. Log at least one entry each day to keep it going."
+  },
+  "settings-auto-capture": {
+    "title": "Auto-capture works in the background",
+    "body": "Enable Automatic Work Logging to let WorkRecall capture your activity silently — no manual prompts needed."
+  }
+}

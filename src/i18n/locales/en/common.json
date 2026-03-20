@@ -6,7 +6,9 @@
     "aiSummary": "AI Summary",
     "export": "Export",
     "settings": "Settings",
-    "help": "Help"
+    "help": "Help",
+    "calendar": "Calendar",
+    "sprintBoard": "Sprint Board"
   },
   "actions": {
     "save": "Save",
@@ -42,5 +44,17 @@
     "title": "Premium Feature",
     "upgrade": "Upgrade to Premium",
     "learnMore": "Learn More"
+  },
+  "endDay": {
+    "label": "End the day",
+    "ending": "Ending…",
+    "ended": "Day ended",
+    "confirmTitle": "End today's work log?",
+    "confirmDescription": "No new entries can be added after this. You'll be able to generate an AI summary once the day is ended.",
+    "helpComingSoon": "Help & Support coming soon!"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Try again"
   }
 }

@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
-import Database from '@tauri-apps/plugin-sql';
 import { AnimatePresence, motion } from 'motion/react';
-import { Heading } from '../components/catalyst/heading';
+
 import { Text } from '../components/catalyst/text';
-import { Divider } from '../components/catalyst/divider';
+
 import { Field, Label, Description } from '../components/catalyst/fieldset';
 import { Input } from '../components/catalyst/input';
 import { Button } from '../components/catalyst/button';
@@ -19,9 +18,10 @@ import { ErrorNotification } from '../components/ErrorNotification';
 import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
 import { TooltipHint } from '../components/TooltipHint';
 import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
+import { getDb } from '../hooks/useDatabase';
 
 export function SettingsView() {
-  const { t } = useTranslation(['settings', 'common']);
+  const { t } = useTranslation(['settings', 'common', 'hints']);
   const { theme, setTheme } = useTheme();
   const { showOnboarding } = useNavigation();
   const { isSeen, markSeen, isAllDisabled, disableAll, enableAll } = useTooltipHints();
@@ -65,32 +65,10 @@ export function SettingsView() {
     setActiveHint(null);
   };
 
-  // Poll debug stats when auto-logging is enabled
-  useEffect(() => {
-    if (!autoLoggingEnabled) return;
-
-    const pollStats = async () => {
-      try {
-        const stats = await invoke('get_auto_log_debug_stats');
-        console.log('[Auto-Logging] Debug Stats:', stats);
-      } catch (error) {
-        console.error('[Auto-Logging] Failed to get debug stats:', error);
-      }
-    };
-
-    // Poll every 30 seconds
-    const interval = setInterval(pollStats, 30000);
-
-    // Initial poll
-    pollStats();
-
-    return () => clearInterval(interval);
-  }, [autoLoggingEnabled]);
-
   const loadSettings = async () => {
     try {
       setIsLoading(true);
-      const db = await Database.load('sqlite:workrecall.db');
+      const db = await getDb();
       const result = await db.select<Array<{key: string, value: string}>>(
         "SELECT value FROM settings WHERE key = 'prompt_interval_minutes'"
       );
@@ -147,7 +125,7 @@ export function SettingsView() {
       }
 
       // Save to database
-      const db = await Database.load('sqlite:workrecall.db');
+      const db = await getDb();
       await db.execute(
         "UPDATE settings SET value = $1 WHERE key = 'prompt_interval_minutes'",
         [promptInterval.toString()]
@@ -162,7 +140,7 @@ export function SettingsView() {
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
       console.error('Failed to save settings:', error);
-      setSaveMessage(`Error: ${error}`);
+      setSaveMessage(`${t('common:status.error')}: ${error}`);
     } finally {
       setIsSaving(false);
     }
@@ -175,12 +153,12 @@ export function SettingsView() {
 
       // Validate input
       if (screenshotsPerHour < 1 || screenshotsPerHour > 3600) {
-        setAutoCaptureSaveMessage('Screenshots per hour must be between 1 and 3600');
+        setAutoCaptureSaveMessage(t('settings:autoLogging.screenshotsValidation'));
         return;
       }
 
       if (apiRequestsPerDay < 1 || apiRequestsPerDay > 1440) {
-        setAutoCaptureSaveMessage('API requests per day must be between 1 and 1440');
+        setAutoCaptureSaveMessage(t('settings:autoLogging.apiRequestsValidation'));
         return;
       }
 
@@ -190,13 +168,13 @@ export function SettingsView() {
         apiRequestsPerDay
       });
 
-      setAutoCaptureSaveMessage('Auto-capture settings saved successfully!');
+      setAutoCaptureSaveMessage(t('settings:autoLogging.saveSuccess'));
 
       // Clear success message after 3 seconds
       setTimeout(() => setAutoCaptureSaveMessage(null), 3000);
     } catch (error) {
       console.error('Failed to save auto-capture settings:', error);
-      setAutoCaptureSaveMessage(`Error: ${error}`);
+      setAutoCaptureSaveMessage(`${t('common:status.error')}: ${error}`);
     } finally {
       setIsSaving(false);
     }
@@ -214,22 +192,15 @@ export function SettingsView() {
 
   const toggleAutoLogging = async (enabled: boolean) => {
     try {
-      console.log(`[Auto-Logging] ${enabled ? 'Enabling' : 'Disabling'} automatic work logging...`);
-
       if (enabled) {
         await invoke('start_auto_logging');
-        console.log('[Auto-Logging] ✅ Automatic work logging ENABLED');
-        console.log('[Auto-Logging] - Screenshots will be captured based on your settings');
-        console.log('[Auto-Logging] - AI analysis will run based on your settings');
-        console.log('[Auto-Logging] - Check the terminal/console for backend logs');
       } else {
         await invoke('stop_auto_logging');
-        console.log('[Auto-Logging] ❌ Automatic work logging DISABLED');
       }
 
       setAutoLoggingEnabled(enabled);
     } catch (error) {
-      console.error('[Auto-Logging] ❌ Failed to toggle auto-logging:', error);
+      console.error('Failed to toggle auto-logging:', error);
       setErrorMessage(error instanceof Error ? error.message : String(error));
     }
   };
@@ -238,7 +209,6 @@ export function SettingsView() {
     try {
       await invoke('set_debug_mode', { enabled });
       setDebugMode(enabled);
-      console.log(`[Debug Mode] ${enabled ? 'Enabled' : 'Disabled'}`);
     } catch (error) {
       console.error('Failed to toggle debug mode:', error);
       setErrorMessage(error instanceof Error ? error.message : String(error));
@@ -251,17 +221,17 @@ export function SettingsView() {
       setDebugSaveMessage(null);
 
       if (debugLogsRetentionDays < 1 || debugLogsRetentionDays > 30) {
-        setDebugSaveMessage('Retention days must be between 1 and 30');
+        setDebugSaveMessage(t('settings:debug.retentionValidation'));
         return;
       }
 
       await invoke('set_debug_logs_retention_days', { days: debugLogsRetentionDays });
-      setDebugSaveMessage('Debug settings saved successfully!');
+      setDebugSaveMessage(t('settings:debug.saveSuccess'));
 
       setTimeout(() => setDebugSaveMessage(null), 3000);
     } catch (error) {
       console.error('Failed to save debug settings:', error);
-      setDebugSaveMessage(`Error: ${error}`);
+      setDebugSaveMessage(`${t('common:status.error')}: ${error}`);
     } finally {
       setIsSaving(false);
     }
@@ -287,7 +257,7 @@ export function SettingsView() {
     try {
       setIsCleaningLogs(true);
       const deletedCount = await invoke<number>('cleanup_old_debug_logs');
-      setInfoMessage(`Cleaned up ${deletedCount} old debug log entries`);
+      setInfoMessage(t('settings:debug.cleanupSuccess', { count: deletedCount }));
     } catch (error) {
       console.error('Failed to cleanup debug logs:', error);
       setErrorMessage(error instanceof Error ? error.message : String(error));
@@ -303,8 +273,8 @@ export function SettingsView() {
     {activeHintDef && (
       <TooltipHint
         show={activeHint !== null}
-        title={activeHintDef.title}
-        body={activeHintDef.body}
+        title={t(`hints:${activeHint}.title` as any)}
+        body={t(`hints:${activeHint}.body` as any)}
         icon={activeHintDef.icon}
         accentColor={activeHintDef.accentColor}
         onDismiss={handleHintDismiss}
@@ -323,17 +293,19 @@ export function SettingsView() {
         onClose={() => setInfoMessage(null)}
         variant="info"
       />
-      <Heading>{t('settings:title')}</Heading>
+      <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent dark:from-amber-400 dark:to-orange-400">
+        {t('settings:title')}
+      </h1>
       <Text className="mt-2 text-zinc-600 dark:text-zinc-400">
         {t('settings:subtitle')}
       </Text>
 
-      <Divider className="my-6" />
+      <div className="mt-6 space-y-6">
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
+          <LanguageSelector />
+        </div>
 
-      <div className="space-y-6">
-        <LanguageSelector />
-
-        <div>
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
           <Field>
             <Label>{t('settings:promptFrequency.label')}</Label>
             <Description>
@@ -353,7 +325,7 @@ export function SettingsView() {
               <Button
                 onClick={saveSettings}
                 disabled={isLoading || isSaving}
-                color="blue"
+                color="amber"
               >
                 {isSaving ? t('common:status.saving') : t('common:actions.save')}
               </Button>
@@ -369,9 +341,7 @@ export function SettingsView() {
           </Field>
         </div>
 
-        <Divider className="my-6" />
-
-        <div>
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
           <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
             {t('settings:launchOnStartup.title')}
           </h3>
@@ -390,14 +360,12 @@ export function SettingsView() {
           </div>
         </div>
 
-        <Divider className="my-6" />
-
-        <div>
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
           <h3 className="text-lg font-semibold text-zinc-950 dark:text-white">
-            Automatic Work Logging
+            {t('settings:autoLogging.title')}
           </h3>
           <Text className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Automatically capture and analyze your work activity using AI.
+            {t('settings:autoLogging.description')}
           </Text>
 
           <div className="mt-4 flex items-center gap-3">
@@ -407,16 +375,15 @@ export function SettingsView() {
               disabled={isLoading}
             />
             <Text className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-              {autoLoggingEnabled ? 'Enabled' : 'Disabled'}
+              {autoLoggingEnabled ? t('settings:autoLogging.enabled') : t('settings:autoLogging.disabled')}
             </Text>
           </div>
 
           <div className="mt-6 space-y-4">
             <Field>
-              <Label>Screenshots per hour</Label>
+              <Label>{t('settings:autoLogging.screenshotsPerHour')}</Label>
               <Description>
-                How many times per hour to capture screenshots (when screen changes).
-                Higher values = more granular tracking, but more storage needed.
+                {t('settings:autoLogging.screenshotsDescription')}
               </Description>
               <div className="flex gap-3 items-end mt-2">
                 <div className="flex-1 max-w-xs">
@@ -430,16 +397,15 @@ export function SettingsView() {
                   />
                 </div>
                 <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Every {Math.round(3600 / screenshotsPerHour)} seconds
+                  {t('settings:autoLogging.everySeconds', { seconds: Math.round(3600 / screenshotsPerHour) })}
                 </Text>
               </div>
             </Field>
 
             <Field>
-              <Label>AI analyses per day</Label>
+              <Label>{t('settings:autoLogging.aiAnalysesPerDay')}</Label>
               <Description>
-                How many times per day to run AI analysis on captured screenshots.
-                Each analysis consumes one OpenAI API request and creates a work log entry.
+                {t('settings:autoLogging.aiAnalysesDescription')}
               </Description>
               <div className="flex gap-3 items-end mt-2">
                 <div className="flex-1 max-w-xs">
@@ -453,11 +419,11 @@ export function SettingsView() {
                   />
                 </div>
                 <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Every {Math.round(1440 / apiRequestsPerDay)} minutes
+                  {t('settings:autoLogging.everyMinutes', { minutes: Math.round(1440 / apiRequestsPerDay) })}
                 </Text>
               </div>
               <Text className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                API usage today: {apiUsageToday} / {apiRequestsPerDay}
+                {t('settings:autoLogging.apiUsageToday', { used: apiUsageToday, limit: apiRequestsPerDay })}
               </Text>
             </Field>
 
@@ -465,42 +431,33 @@ export function SettingsView() {
               <Button
                 onClick={saveAutoCaptureSettings}
                 disabled={isLoading || isSaving}
-                color="blue"
+                color="amber"
               >
-                {isSaving ? 'Saving...' : 'Save Capture Settings'}
+                {isSaving ? t('common:status.saving') : t('settings:autoLogging.saveCaptureSettings')}
               </Button>
             </div>
 
             {autoCaptureSaveMessage && (
-              <Text className={`text-sm ${autoCaptureSaveMessage.includes('Error') ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+              <Text className={`text-sm ${autoCaptureSaveMessage.includes(t('common:status.error')) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                 {autoCaptureSaveMessage}
               </Text>
             )}
           </div>
 
-          <div className="mt-4 rounded-lg bg-blue-50 p-4 text-sm dark:bg-blue-950/20">
-            <p className="font-semibold text-blue-900 dark:text-blue-100">
-              How it works:
+          <div className="mt-4 rounded-lg bg-amber-50 p-4 text-sm dark:bg-amber-950/20">
+            <p className="font-semibold text-amber-900 dark:text-amber-100">
+              {t('settings:autoLogging.howItWorks')}
             </p>
-            <ul className="mt-2 list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200">
-              <li>Screenshots taken at your configured rate (only when screen changes)</li>
-              <li>AI analyzes at your configured interval and creates work log entries</li>
-              <li>Screenshots deleted after analysis (privacy-first)</li>
-              <li>Automatically pauses when computer is idle (5+ minutes)</li>
+            <ul className="mt-2 list-disc list-inside space-y-1 text-amber-800 dark:text-amber-200">
+              <li>{t('settings:autoLogging.howItWorksItems.screenshots')}</li>
+              <li>{t('settings:autoLogging.howItWorksItems.aiAnalysis')}</li>
+              <li>{t('settings:autoLogging.howItWorksItems.privacy')}</li>
+              <li>{t('settings:autoLogging.howItWorksItems.idle')}</li>
             </ul>
           </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
-            {t('settings:sections.notifications.title')}
-          </h3>
-          <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            {t('settings:sections.notifications.comingSoon')}
-          </Text>
-        </div>
-
-        <div>
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
           <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
             {t('settings:sections.darkMode.title')}
           </h3>
@@ -514,7 +471,7 @@ export function SettingsView() {
                 onClick={() => setTheme(option)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
                   theme === option
-                    ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white'
+                    ? 'bg-amber-500 text-white border-amber-500 dark:bg-amber-400 dark:text-zinc-900 dark:border-amber-400'
                     : 'bg-white text-zinc-700 border-zinc-300 hover:border-zinc-400 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-500'
                 }`}
               >
@@ -524,19 +481,8 @@ export function SettingsView() {
           </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
-            {t('settings:sections.database.title')}
-          </h3>
-          <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            {t('settings:sections.database.comingSoon')}
-          </Text>
-        </div>
-
-        <Divider className="my-6" />
-
         {/* Welcome Guide */}
-        <div>
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
           <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
             {t('settings:onboarding.title')}
           </h3>
@@ -548,15 +494,13 @@ export function SettingsView() {
           </Button>
         </div>
 
-        <Divider className="my-6" />
-
         {/* Feature tips */}
-        <div>
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
           <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
-            Feature tips
+            {t('settings:featureTips.title')}
           </h3>
           <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Small hints that surface when you visit a page for the first time.
+            {t('settings:featureTips.description')}
           </Text>
           <Button
             onClick={isAllDisabled ? enableAll : disableAll}
@@ -567,10 +511,8 @@ export function SettingsView() {
           </Button>
         </div>
 
-        <Divider className="my-6" />
-
         {/* Developer section (collapsible) */}
-        <div>
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
           <button
             onClick={() => setDeveloperOpen((o) => !o)}
             className="flex w-full items-center justify-between text-left"
@@ -601,10 +543,10 @@ export function SettingsView() {
                 <div className="mt-4 space-y-4">
                   <div>
                     <h4 className="text-base font-semibold text-zinc-950 dark:text-white">
-                      Debug Mode
+                      {t('settings:debug.title')}
                     </h4>
                     <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                      Store full API requests (including screenshots) for debugging purposes.
+                      {t('settings:debug.description')}
                     </Text>
                   </div>
 
@@ -615,7 +557,7 @@ export function SettingsView() {
                       disabled={isLoading}
                     />
                     <Text className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                      {debugMode ? 'Enabled' : 'Disabled'}
+                      {debugMode ? t('settings:debug.enabled') : t('settings:debug.disabled')}
                     </Text>
                   </div>
 
@@ -623,23 +565,21 @@ export function SettingsView() {
                     <div className="rounded-lg bg-yellow-50 p-4 text-sm dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900">
                       <p className="font-semibold text-yellow-900 dark:text-yellow-100 flex items-center gap-2">
                         <span>⚠️</span>
-                        <span>Warning: Storage Impact</span>
+                        <span>{t('settings:debug.warningTitle')}</span>
                       </p>
                       <p className="mt-2 text-yellow-800 dark:text-yellow-200">
-                        Debug mode stores full API requests including base64-encoded screenshots.
-                        This will significantly increase database size (5-20MB per request with 10 screenshots).
+                        {t('settings:debug.warningBody')}
                       </p>
                       <p className="mt-2 text-yellow-800 dark:text-yellow-200">
-                        With {apiRequestsPerDay} requests per day, expect ~{Math.round(apiRequestsPerDay * 12 / 1024)} GB per day.
-                        Old debug logs are automatically deleted after the retention period.
+                        {t('settings:debug.warningEstimate', { requests: apiRequestsPerDay, gb: Math.round(apiRequestsPerDay * 12 / 1024) })}
                       </p>
                     </div>
                   )}
 
                   <Field>
-                    <Label>Debug logs retention period (days)</Label>
+                    <Label>{t('settings:debug.retentionLabel')}</Label>
                     <Description>
-                      Debug logs older than this will be automatically deleted daily to prevent database bloat.
+                      {t('settings:debug.retentionDescription')}
                     </Description>
                     <div className="flex gap-3 items-end mt-2">
                       <div className="flex-1 max-w-xs">
@@ -655,29 +595,29 @@ export function SettingsView() {
                       <Button
                         onClick={saveDebugSettings}
                         disabled={isLoading || isSaving}
-                        color="blue"
+                        color="amber"
                       >
-                        {isSaving ? 'Saving...' : 'Save'}
+                        {isSaving ? t('common:status.saving') : t('common:actions.save')}
                       </Button>
                       <Button
                         onClick={cleanupOldDebugLogs}
                         disabled={isLoading || isCleaningLogs}
                         color="zinc"
                       >
-                        {isCleaningLogs ? 'Cleaning...' : 'Cleanup Now'}
+                        {isCleaningLogs ? t('settings:debug.cleaning') : t('settings:debug.cleanupNow')}
                       </Button>
                     </div>
                     {debugSaveMessage && (
-                      <Text className={`mt-2 text-sm ${debugSaveMessage.includes('Error') ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                      <Text className={`mt-2 text-sm ${debugSaveMessage.includes(t('common:status.error')) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                         {debugSaveMessage}
                       </Text>
                     )}
                   </Field>
 
                   <div className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
-                    <h4 className="text-sm font-semibold text-zinc-950 dark:text-white">Developer tools</h4>
+                    <h4 className="text-sm font-semibold text-zinc-950 dark:text-white">{t('settings:developerTools.title')}</h4>
                     <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                      These actions are intended for development and testing only.
+                      {t('settings:developerTools.description')}
                     </Text>
                     <div className="mt-3 flex items-center gap-4">
                       <Button
@@ -685,10 +625,10 @@ export function SettingsView() {
                         disabled={!isDayEnded || isUnendingDay}
                         color="zinc"
                       >
-                        {isUnendingDay ? 'Un-ending…' : 'Un-end today'}
+                        {isUnendingDay ? t('settings:developerTools.unending') : t('settings:developerTools.unendDay')}
                       </Button>
                       <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-                        {isDayEnded ? 'Today is currently ended. Click to reopen it.' : 'Today is not ended.'}
+                        {isDayEnded ? t('settings:developerTools.dayEnded') : t('settings:developerTools.dayNotEnded')}
                       </Text>
                     </div>
                   </div>

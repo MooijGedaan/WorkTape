@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Heading } from '../components/catalyst/heading';
+import { motion, useMotionValue, useTransform, animate } from 'motion/react';
+
 import { Text } from '../components/catalyst/text';
 import { Button } from '../components/catalyst/button';
 import { useNavigation } from '../hooks/useNavigation.tsx';
@@ -8,6 +9,7 @@ import { getDb } from '../hooks/useDatabase';
 import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
 import { TooltipHint } from '../components/TooltipHint';
 import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
+import { DocumentIcon, CalendarDaysIcon, ClockIcon } from '../components/icons';
 
 interface Stats {
   totalEntries: number;
@@ -15,8 +17,29 @@ interface Stats {
   currentStreak: number;
 }
 
+function AnimatedNumber({ value }: { value: number }) {
+  const motionValue = useMotionValue(0);
+  const rounded = useTransform(motionValue, (v) => Math.round(v));
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    const controls = animate(motionValue, value, {
+      duration: 0.8,
+      ease: [0.25, 0.1, 0.25, 1],
+    });
+    return controls.stop;
+  }, [value, motionValue]);
+
+  useEffect(() => {
+    const unsubscribe = rounded.on('change', (v) => setDisplay(v));
+    return unsubscribe;
+  }, [rounded]);
+
+  return <>{display}</>;
+}
+
 export function HomeView() {
-  const { t } = useTranslation(['home', 'common']);
+  const { t } = useTranslation(['home', 'common', 'hints']);
   const { goToWorkLog } = useNavigation();
   const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
@@ -117,8 +140,8 @@ export function HomeView() {
     {activeHintDef && (
       <TooltipHint
         show={activeHint !== null}
-        title={activeHintDef.title}
-        body={activeHintDef.body}
+        title={t(`hints:${activeHint}.title` as any)}
+        body={t(`hints:${activeHint}.body` as any)}
         icon={activeHintDef.icon}
         accentColor={activeHintDef.accentColor}
         onDismiss={handleDismiss}
@@ -126,46 +149,79 @@ export function HomeView() {
       />
     )}
     <div className="h-full">
-      <Heading>{t('home:title')}</Heading>
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent dark:from-amber-400 dark:to-orange-400">
+        {t('home:title')}
+      </h1>
       <Text className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
         {t('home:subtitle')}
       </Text>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Quick Stats Cards */}
-        <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
-          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t('home:stats.totalEntries.label')}</h3>
-          <p className="mt-2 text-3xl font-semibold text-zinc-950 dark:text-white">
-            {isLoading ? '...' : stats.totalEntries}
+      <motion.div
+        className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        initial="hidden"
+        animate="visible"
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
+      >
+        {/* Total Entries */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+          className="rounded-lg border-t-3 border-amber-500 bg-white p-6 shadow-md hover:shadow-lg transition-shadow ring-1 ring-zinc-950/5 dark:bg-gradient-to-b dark:from-amber-950/20 dark:to-zinc-900 dark:ring-white/10"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
+              <DocumentIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t('home:stats.totalEntries.label')}</h3>
+          </div>
+          <p className="text-3xl font-semibold text-zinc-950 dark:text-white">
+            {isLoading ? '...' : <AnimatedNumber value={stats.totalEntries} />}
           </p>
           <Text className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             {t('home:stats.totalEntries.description')}
           </Text>
-        </div>
+        </motion.div>
 
-        <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
-          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t('home:stats.thisWeek.label')}</h3>
-          <p className="mt-2 text-3xl font-semibold text-zinc-950 dark:text-white">
-            {isLoading ? '...' : stats.thisWeekEntries}
+        {/* This Week */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+          className="rounded-lg border-t-3 border-orange-500 bg-white p-6 shadow-md hover:shadow-lg transition-shadow ring-1 ring-zinc-950/5 dark:bg-gradient-to-b dark:from-amber-950/20 dark:to-zinc-900 dark:ring-white/10"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/40">
+              <CalendarDaysIcon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            </div>
+            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t('home:stats.thisWeek.label')}</h3>
+          </div>
+          <p className="text-3xl font-semibold text-zinc-950 dark:text-white">
+            {isLoading ? '...' : <AnimatedNumber value={stats.thisWeekEntries} />}
           </p>
           <Text className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             {t('home:stats.thisWeek.description')}
           </Text>
-        </div>
+        </motion.div>
 
-        <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10">
-          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t('home:stats.streak.label')}</h3>
-          <p className="mt-2 text-3xl font-semibold text-zinc-950 dark:text-white">
+        {/* Streak */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+          className="rounded-lg border-t-3 border-emerald-500 bg-white p-6 shadow-md hover:shadow-lg transition-shadow ring-1 ring-zinc-950/5 dark:bg-gradient-to-b dark:from-amber-950/20 dark:to-zinc-900 dark:ring-white/10"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/40">
+              <ClockIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t('home:stats.streak.label')}</h3>
+          </div>
+          <p className="text-3xl font-semibold text-zinc-950 dark:text-white">
             {isLoading ? '...' : t('home:stats.streak.days', { count: stats.currentStreak })}
           </p>
           <Text className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             {t('home:stats.streak.description')}
           </Text>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       <div className="mt-8">
-        <Button onClick={goToWorkLog} color="blue">
+        <Button onClick={goToWorkLog} color="amber">
           {t('home:actions.goToWorkLog')}
         </Button>
       </div>

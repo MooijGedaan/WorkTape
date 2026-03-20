@@ -10,17 +10,21 @@
   "list": {
     "title": "Work Log ({{count}} entries)",
     "empty": "No entries yet. Start logging your work above!",
+    "clickToEdit": "Click to edit this entry",
     "headers": {
       "time": "Time",
       "description": "Description",
       "delete": "Delete"
-    },
-    "regenerateSummary": "Regenerate AI summary for this day"
+    }
   },
   "errors": {
     "loadFailed": "Failed to load entries: {{error}}",
     "addFailed": "Failed to add entry: {{error}}",
     "deleteFailed": "Failed to delete entry: {{error}}",
     "emptyDescription": "Please enter a task description"
-  }
+  },
+  "dayClosed": "Today's log is closed. No more entries can be added.",
+  "linkToTask": "Link to task:",
+  "noTask": "No task",
+  "autobadge": "Auto"
 }

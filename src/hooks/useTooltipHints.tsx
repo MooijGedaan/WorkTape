@@ -3,7 +3,6 @@ import { createContext, useContext, useState } from 'react';
 export type HintId =
   | 'worklog-click-to-edit'
   | 'worklog-sprint-linking'
-  | 'worklog-regenerate-summary'
   | 'sprint-drag-drop'
   | 'sprint-next-action'
   | 'calendar-week-navigation'

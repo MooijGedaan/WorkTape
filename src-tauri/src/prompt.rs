@@ -91,7 +91,7 @@ pub fn show_prompt_window(app: &AppHandle) -> tauri::Result<()> {
     }
 
     // Get primary monitor size to calculate bottom-right position
-    let monitor = app.primary_monitor()?.unwrap();
+    let monitor = app.primary_monitor()?.ok_or_else(|| std::io::Error::other("No primary monitor found"))?;
     let monitor_size = monitor.size();
     let scale_factor = monitor.scale_factor();
 

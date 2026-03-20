@@ -1755,7 +1755,7 @@ pub fn run() {
             prompt::start_prompt_timer(app.handle().clone());
 
             // Initialize and start auto logger service
-            println!("🚀 Initializing AutoLoggerService...");
+            log::info!("Initializing AutoLoggerService...");
             let auto_logger = auto_logger::AutoLoggerService::new();
 
             // Load settings from database
@@ -1767,13 +1767,13 @@ pub fn run() {
                 }
             });
 
-            println!("📡 Starting background capture/analysis loops...");
+            log::info!("Starting background capture/analysis loops...");
             auto_logger.start(app.handle().clone());
-            println!("✅ AutoLoggerService started");
+            log::info!("AutoLoggerService started");
 
             // Store in app state for control
             app.manage(auto_logger);
-            println!("💾 AutoLoggerService registered in app state");
+            log::info!("AutoLoggerService registered in app state");
 
             Ok(())
         })
@@ -1781,7 +1781,7 @@ pub fn run() {
             // Only prevent close for the main window, let prompt close normally
             if window.label() == "main" {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    window.hide().unwrap();
+                    let _ = window.hide();
                     api.prevent_close();
                 }
             }

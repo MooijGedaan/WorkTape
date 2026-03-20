@@ -66,17 +66,17 @@ const PRIORITY_BADGE: Record<PriorityKey, 'zinc' | 'yellow' | 'red'> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(isoString: string): string {
+function formatRelativeTime(isoString: string, t: (key: string, opts?: object) => string): string {
   const date = new Date(isoString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffMins < 1) return t('relativeTime.justNow');
+  if (diffMins < 60) return t('relativeTime.minutesAgo', { count: diffMins });
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffHours < 24) return t('relativeTime.hoursAgo', { count: diffHours });
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
+  return t('relativeTime.daysAgo', { count: diffDays });
 }
 
 function truncate(str: string, max: number): string {
@@ -103,7 +103,7 @@ function TaskCard({
   return (
     <div
       onPointerDown={(e) => onPointerDown(e, task)}
-      className={`bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 border-l-4 ${PRIORITY_COLORS[task.priority]} p-3 cursor-grab hover:shadow-md transition-shadow select-none touch-none ${isDragging ? 'opacity-40' : ''}`}
+      className={`bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 border-l-4 ${PRIORITY_COLORS[task.priority]} p-3 cursor-grab hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 select-none touch-none ${isDragging ? 'opacity-40' : ''}`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -115,7 +115,7 @@ function TaskCard({
       {task.labels.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
           {task.labels.map((label) => (
-            <Badge key={label} color="blue" className="text-xs">{label}</Badge>
+            <Badge key={label} color="amber" className="text-xs">{label}</Badge>
           ))}
         </div>
       )}
@@ -139,7 +139,7 @@ function TaskCard({
           }}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
-          className="text-xs h-6 rounded px-1 pr-5 bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none"
+          className="text-xs h-6 rounded px-1 pr-5 bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border-0 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer appearance-none"
           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M5.75 10.75L8 13L10.25 10.75' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M10.25 5.25L8 3L5.75 5.25' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center' }}
         >
           {COLUMNS.map((col) => (
@@ -202,7 +202,7 @@ function WorkLinksPanel({ taskId }: { taskId: number }) {
   };
 
   if (loading) {
-    return <Text className="text-xs text-zinc-500">Loading…</Text>;
+    return <Text className="text-xs text-zinc-500">{t('loading')}</Text>;
   }
 
   return (
@@ -219,7 +219,7 @@ function WorkLinksPanel({ taskId }: { taskId: number }) {
               <div key={link.id} className="flex items-start gap-2 p-2 rounded bg-zinc-50 dark:bg-zinc-700/50 border border-zinc-200 dark:border-zinc-600">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-xs text-zinc-400">{formatRelativeTime(link.timestamp)}</span>
+                    <span className="text-xs text-zinc-400">{formatRelativeTime(link.timestamp, t)}</span>
                     <Badge color={link.entry_source === 'auto' ? 'purple' : 'green'} className="text-xs">
                       {link.entry_source === 'auto' ? t('workLinks.auto') : t('workLinks.manual')}
                     </Badge>
@@ -253,7 +253,7 @@ function WorkLinksPanel({ taskId }: { taskId: number }) {
               <div key={`${sug.entry_source}-${sug.entry_id}-${idx}`} className="flex items-start gap-2 p-2 rounded bg-zinc-50 dark:bg-zinc-700/50 border border-dashed border-zinc-300 dark:border-zinc-600">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-xs text-zinc-400">{formatRelativeTime(sug.timestamp)}</span>
+                    <span className="text-xs text-zinc-400">{formatRelativeTime(sug.timestamp, t)}</span>
                     <Badge color={sug.entry_source === 'auto' ? 'purple' : 'green'} className="text-xs">
                       {sug.entry_source === 'auto' ? t('workLinks.auto') : t('workLinks.manual')}
                     </Badge>
@@ -264,7 +264,7 @@ function WorkLinksPanel({ taskId }: { taskId: number }) {
                 </div>
                 <button
                   onClick={() => handleLink(sug)}
-                  className="text-zinc-400 hover:text-blue-500 transition-colors flex-shrink-0 text-xs font-medium"
+                  className="text-zinc-400 hover:text-amber-500 transition-colors flex-shrink-0 text-xs font-medium"
                   title={t('workLinks.link')}
                 >
                   +
@@ -304,6 +304,7 @@ function TaskDetailDialog({
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<NextActionHistoryEntry[]>([]);
   const [resolving, setResolving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const loadHistory = async (taskId: number) => {
     try {
@@ -362,8 +363,8 @@ function TaskDetailDialog({
 
   const handleDelete = async () => {
     if (!task) return;
-    if (!window.confirm(t('taskForm.confirmDelete'))) return;
     await onDelete(task.id);
+    setShowDeleteConfirm(false);
     onClose();
   };
 
@@ -380,6 +381,7 @@ function TaskDetailDialog({
   };
 
   return (
+    <>
     <Dialog open={task !== null} onClose={onClose} size="4xl">
       <DialogTitle>{task ? task.title : ''}</DialogTitle>
       <DialogBody>
@@ -402,7 +404,7 @@ function TaskDetailDialog({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('taskForm.descriptionPlaceholder')}
                 rows={4}
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
               />
             </Field>
 
@@ -442,7 +444,7 @@ function TaskDetailDialog({
                   {labels.map((label) => (
                     <span
                       key={label}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200"
                     >
                       {label}
                       <button onClick={() => removeLabel(label)} className="hover:text-red-500">×</button>
@@ -482,7 +484,7 @@ function TaskDetailDialog({
                   </span>
                   {history.map((entry) => (
                     <div key={entry.id} className="flex items-start gap-2 px-2 py-1 rounded bg-zinc-50 dark:bg-zinc-700/40 border border-zinc-200 dark:border-zinc-600">
-                      <span className="text-xs text-zinc-500 flex-shrink-0 mt-0.5">{formatRelativeTime(entry.resolved_at)}</span>
+                      <span className="text-xs text-zinc-500 flex-shrink-0 mt-0.5">{formatRelativeTime(entry.resolved_at, t)}</span>
                       <span className="text-xs text-zinc-500 line-through leading-snug">{entry.action}</span>
                     </div>
                   ))}
@@ -501,7 +503,7 @@ function TaskDetailDialog({
         </div>
       </DialogBody>
       <DialogActions>
-        <Button plain onClick={handleDelete} className="mr-auto text-red-600 hover:text-red-700">
+        <Button plain onClick={() => setShowDeleteConfirm(true)} className="mr-auto text-red-600 hover:text-red-700">
           {t('taskForm.delete')}
         </Button>
         <Button plain onClick={onClose}>{t('taskForm.cancel')}</Button>
@@ -510,6 +512,18 @@ function TaskDetailDialog({
         </Button>
       </DialogActions>
     </Dialog>
+
+    <Dialog open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
+      <DialogTitle>{t('taskForm.confirmDeleteTitle')}</DialogTitle>
+      <DialogBody>
+        <Text>{t('taskForm.confirmDelete')}</Text>
+      </DialogBody>
+      <DialogActions>
+        <Button plain onClick={() => setShowDeleteConfirm(false)}>{t('taskForm.cancel')}</Button>
+        <Button color="red" onClick={handleDelete}>{t('taskForm.delete')}</Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 }
 
@@ -571,7 +585,7 @@ function CreateTaskDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('taskForm.descriptionPlaceholder')}
               rows={3}
-              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
             />
           </Field>
           <Field>
@@ -616,10 +630,10 @@ function BoardColumn({
   const { t } = useTranslation('sprintboard');
 
   const columnHeaderColors: Record<StatusKey, string> = {
-    'todo': 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300',
-    'in-progress': 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-    'done': 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300',
-    'blocked': 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+    'todo': 'bg-gradient-to-r from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-800/50 text-zinc-600 dark:text-zinc-300',
+    'in-progress': 'bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/20 text-amber-700 dark:text-amber-300',
+    'done': 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/20 text-green-700 dark:text-green-300',
+    'blocked': 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/20 text-red-700 dark:text-red-300',
   };
 
   return (
@@ -633,7 +647,7 @@ function BoardColumn({
       <div
         className={`flex-1 flex flex-col gap-2 p-2 rounded-b-lg border border-t-0 overflow-y-auto min-h-[200px] transition-colors ${
           isOver
-            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600'
+            ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-600'
             : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-700'
         }`}
       >
@@ -660,7 +674,7 @@ function BoardColumn({
 // ─── SprintBoardView ──────────────────────────────────────────────────────────
 
 export function SprintBoardView() {
-  const { t } = useTranslation('sprintboard');
+  const { t } = useTranslation(['sprintboard', 'hints']);
   const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [tasks, setTasks] = useState<SprintTask[]>([]);
@@ -768,6 +782,7 @@ export function SprintBoardView() {
         const ghost = document.createElement('div');
         ghost.className =
           'fixed pointer-events-none z-50 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-300 shadow-xl px-3 py-2 text-sm font-medium text-zinc-900 dark:text-zinc-100 opacity-90 max-w-[180px] truncate';
+        ghost.style.transform = 'rotate(2deg)';
         ghost.textContent = task.title;
         document.body.appendChild(ghost);
         ghostRef.current = ghost;
@@ -831,8 +846,8 @@ export function SprintBoardView() {
     {activeHintDef && (
       <TooltipHint
         show={activeHint !== null}
-        title={activeHintDef.title}
-        body={activeHintDef.body}
+        title={t(`hints:${activeHint}.title` as any)}
+        body={t(`hints:${activeHint}.body` as any)}
         icon={activeHintDef.icon}
         accentColor={activeHintDef.accentColor}
         onDismiss={handleHintDismiss}
@@ -876,7 +891,7 @@ export function SprintBoardView() {
       {/* Board columns */}
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Text className="text-zinc-400">Loading…</Text>
+          <Text className="text-zinc-400">{t('loading')}</Text>
         </div>
       ) : tasks.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-2">

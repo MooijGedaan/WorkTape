@@ -94,12 +94,12 @@ export const SidebarItem = forwardRef(function SidebarItem(
     // Active
     'data-active:*:data-[slot=icon]:fill-zinc-950',
     // Current
-    'data-current:*:data-[slot=icon]:fill-zinc-950',
+    'data-current:*:data-[slot=icon]:fill-amber-600',
     // Dark mode
     'dark:text-white dark:*:data-[slot=icon]:fill-zinc-400',
     'dark:data-hover:*:data-[slot=icon]:fill-white',
     'dark:data-active:*:data-[slot=icon]:fill-white',
-    'dark:data-current:*:data-[slot=icon]:fill-white'
+    'dark:data-current:*:data-[slot=icon]:fill-amber-400'
   )
 
   return (
@@ -107,7 +107,7 @@ export const SidebarItem = forwardRef(function SidebarItem(
       {current && (
         <motion.span
           layoutId="current-indicator"
-          className="absolute inset-y-2 -left-4 w-0.5 rounded-full bg-zinc-950 dark:bg-white"
+          className="absolute inset-y-2 -left-4 w-1 rounded-full bg-amber-500 dark:bg-amber-400"
         />
       )}
       <a

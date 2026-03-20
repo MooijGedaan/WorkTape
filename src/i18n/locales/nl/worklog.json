@@ -10,17 +10,21 @@
   "list": {
     "title": "Werklogboek ({{count}} items)",
     "empty": "Nog geen items. Begin hierboven met het loggen van uw werk!",
+    "clickToEdit": "Klik om dit item te bewerken",
     "headers": {
       "time": "Tijd",
       "description": "Beschrijving",
       "delete": "Verwijderen"
-    },
-    "regenerateSummary": "AI-samenvatting voor deze dag opnieuw genereren"
+    }
   },
   "errors": {
     "loadFailed": "Laden van items mislukt: {{error}}",
     "addFailed": "Toevoegen van item mislukt: {{error}}",
     "deleteFailed": "Verwijderen van item mislukt: {{error}}",
     "emptyDescription": "Voer een taakbeschrijving in"
-  }
+  },
+  "dayClosed": "Het logboek van vandaag is gesloten. Er kunnen geen nieuwe items meer worden toegevoegd.",
+  "linkToTask": "Koppel aan taak:",
+  "noTask": "Geen taak",
+  "autobadge": "Auto"
 }

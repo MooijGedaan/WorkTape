@@ -65,7 +65,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-          WorkRecall &middot; {t('onboardingModal.navigation.next') && `Step ${step + 1} of ${STEPS.length}`}
+          WorkRecall &middot; {t('onboardingModal.stepOf', { step: step + 1, total: STEPS.length })}
         </span>
         <button
           onClick={handleClose}
@@ -109,7 +109,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
             aria-label={`Go to step ${i + 1}`}
             className={`h-2 rounded-full transition-all duration-200 ${
               i === step
-                ? 'w-6 bg-zinc-900 dark:bg-white'
+                ? 'w-6 bg-amber-500 dark:bg-amber-400'
                 : 'w-2 bg-zinc-300 dark:bg-zinc-600 hover:bg-zinc-400 dark:hover:bg-zinc-500'
             }`}
           />
@@ -134,7 +134,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
               {t('onboardingModal.navigation.back')}
             </Button>
           )}
-          <Button onClick={goNext} color="blue">
+          <Button onClick={goNext} color="amber">
             {isLast
               ? t('onboardingModal.navigation.getStarted')
               : t('onboardingModal.navigation.next')}

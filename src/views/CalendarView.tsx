@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useTauriEvent } from '../hooks/useTauriEvent';
 import { getDb } from '../hooks/useDatabase';
@@ -96,6 +97,7 @@ function formatDayHeader(dateStr: string): { dayNum: string; dayName: string } {
 }
 
 function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string) => Promise<void> }) {
+  const { t } = useTranslation('calendar');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { dayNum, dayName } = formatDayHeader(day.date);
@@ -115,24 +117,30 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
   const canGenerate = !day.isToday || day.isDayEnded;
 
   return (
-    <div className="w-full border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 overflow-hidden">
+    <div className={`w-full border rounded-xl bg-white dark:bg-zinc-900 overflow-hidden border-l-3 ${
+      day.isToday
+        ? 'border-amber-500 ring-2 ring-amber-500/30 border-zinc-200 dark:border-zinc-700'
+        : day.entryCount > 0
+          ? 'border-l-amber-500 border-zinc-200 dark:border-zinc-700'
+          : 'border-l-slate-200 dark:border-l-zinc-700 border-zinc-200 dark:border-zinc-700'
+    }`}>
       {/* Day header */}
       <div className="flex items-baseline gap-3 px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
         <span className="text-3xl font-bold text-zinc-900 dark:text-white leading-none">{dayNum}</span>
         <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{dayName}</span>
         {day.isToday && day.isDayEnded && (
           <span className="ml-2 inline-flex items-center rounded-md bg-green-50 dark:bg-green-950/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300 ring-1 ring-inset ring-green-700/10 dark:ring-green-300/10">
-            Day ended
+            {t('dayEnded')}
           </span>
         )}
         {day.isToday && !day.isDayEnded && (
-          <span className="ml-2 inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-300/10">
-            Today
+          <span className="ml-2 inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-700/10 dark:ring-amber-300/10">
+            {t('today')}
           </span>
         )}
         {day.entryCount > 0 && (
           <span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">
-            {day.entryCount} {day.entryCount === 1 ? 'entry' : 'entries'}
+            {t('entryCount', { count: day.entryCount })}
           </span>
         )}
       </div>
@@ -145,7 +153,7 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
               {(parseSummary(day.summary) ?? [{ label: '', summary: day.summary }]).map((item, i) => (
                 <div key={i} className="flex flex-col gap-0.5">
                   {item.label && (
-                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">{item.label}</span>
+                    <span className="inline-block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded">{item.label}</span>
                   )}
                   <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{item.summary}</p>
                 </div>
@@ -160,14 +168,14 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
                 disabled={isGenerating}
                 className="self-start text-xs italic text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isGenerating ? 'Regenerating…' : 'Regenerate AI summary for this day'}
+                {isGenerating ? t('regenerating') : t('regenerateSummary')}
               </button>
             )}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
             {day.entryCount === 0 ? (
-              <p className="text-sm text-zinc-400 dark:text-zinc-600 italic">No work entries for this day.</p>
+              <p className="text-sm text-zinc-400 dark:text-zinc-600 italic">{t('noEntries')}</p>
             ) : canGenerate ? (
               <>
                 {error && (
@@ -176,14 +184,14 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="self-start text-sm italic text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="self-start text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isGenerating ? 'Generating summary…' : '✦ Generate AI summary for this day'}
+                  {isGenerating ? t('generating') : t('generateSummary')}
                 </button>
               </>
             ) : (
               <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">
-                Day in progress — end the day to generate a summary.
+                {t('dayInProgress')}
               </p>
             )}
           </div>
@@ -194,7 +202,7 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
 }
 
 export function CalendarView() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['calendar', 'hints']);
   const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [weeks, setWeeks] = useState<WeekGroup[]>([]);
@@ -300,7 +308,7 @@ export function CalendarView() {
     );
 
     if (allEntries.length < 1) {
-      throw new Error('No work entries found for this day.');
+      throw new Error(t('calendar:noEntriesThrown'));
     }
 
     // Group entries by task_id (null = ungrouped)
@@ -341,8 +349,8 @@ export function CalendarView() {
     {activeHintDef && (
       <TooltipHint
         show={activeHint !== null}
-        title={activeHintDef.title}
-        body={activeHintDef.body}
+        title={t(`hints:${activeHint}.title` as any)}
+        body={t(`hints:${activeHint}.body` as any)}
         icon={activeHintDef.icon}
         accentColor={activeHintDef.accentColor}
         onDismiss={handleDismiss}
@@ -351,26 +359,37 @@ export function CalendarView() {
     )}
     <div className="flex flex-col h-full overflow-hidden w-full">
       <div className="flex-shrink-0 mb-6">
-        <Heading>Work Calendar</Heading>
-        <Text className="mt-1">A day-by-day view of your work history. AI summaries are permanent once generated.</Text>
+        <Heading>{t('calendar:title')}</Heading>
+        <Text className="mt-1">{t('calendar:subtitle')}</Text>
       </div>
 
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Text className="text-zinc-400 italic">Loading…</Text>
+          <Text className="text-zinc-400 italic">{t('calendar:loading')}</Text>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto space-y-8 pr-1">
           {weeks.map((week) => (
             <section key={week.label}>
-              <div className="text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3 px-1">
+              <div className="text-xs font-semibold uppercase tracking-widest text-amber-600/70 dark:text-amber-400/60 mb-3 px-1">
                 {week.label}
               </div>
-              <div className="space-y-3">
+              <motion.div
+                className="space-y-3"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
+              >
                 {week.days.map((day) => (
-                  <DayCard key={day.date} day={day} onGenerate={handleGenerate} />
+                  <motion.div
+                    key={day.date}
+                    variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+                  >
+                    <DayCard day={day} onGenerate={handleGenerate} />
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </section>
           ))}
         </div>

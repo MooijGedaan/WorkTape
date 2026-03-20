@@ -1,0 +1,30 @@
+{
+  "worklog-click-to-edit": {
+    "title": "Klik op een item om het te bewerken",
+    "body": "Tik op een werklogitem om de beschrijving of volgende actie direct bij te werken."
+  },
+  "worklog-sprint-linking": {
+    "title": "Koppel items aan sprinttaken",
+    "body": "Gebruik de taakselectie onder het invoerveld om nieuwe items te koppelen aan een actieve sprinttaak."
+  },
+  "sprint-drag-drop": {
+    "title": "Sleep om taken te verplaatsen",
+    "body": "Sleep kaarten tussen kolommen om hun status direct bij te werken."
+  },
+  "sprint-next-action": {
+    "title": "Bijhouden wat je volgende actie is",
+    "body": "Open een taak en stel een \"volgende actie\" in, zodat je altijd weet wat je moet doen als je terugkomt."
+  },
+  "calendar-week-navigation": {
+    "title": "Blader door vorige weken",
+    "body": "Scroll naar beneden om eerdere weken te zien. Elke dag toont je aantal items en AI-samenvatting."
+  },
+  "home-stats": {
+    "title": "Je logreeks",
+    "body": "WorkRecall houdt je dagelijkse logreeks bij. Log elke dag minimaal één item om de reeks gaande te houden."
+  },
+  "settings-auto-capture": {
+    "title": "Automatisch vastleggen werkt op de achtergrond",
+    "body": "Schakel Automatische Werkregistratie in om WorkRecall je activiteit stil te laten vastleggen — geen handmatige prompts nodig."
+  }
+}

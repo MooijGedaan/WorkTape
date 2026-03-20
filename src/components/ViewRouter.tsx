@@ -6,8 +6,6 @@ import { SettingsView } from '../views/SettingsView';
 import { ExportView } from '../views/ExportView';
 import { AISummaryView } from '../views/AISummaryView';
 import { CalendarView } from '../views/CalendarView';
-import { ScreenCaptureTestView } from '../views/ScreenCaptureTestView';
-import ApiLogsView from '../views/ApiLogsView';
 import { SprintBoardView } from '../views/SprintBoardView';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -22,8 +20,6 @@ export function ViewRouter() {
     'sprint-board': <SprintBoardView />,
     'settings': <SettingsView />,
     'export': <ExportView />,
-    'screen-capture-test': <ScreenCaptureTestView />,
-    'api-logs': <ApiLogsView />,
   };
 
   return (
@@ -33,7 +29,7 @@ export function ViewRouter() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.15 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="h-full flex flex-col"
       >
         <ErrorBoundary key={currentView}>

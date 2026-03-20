@@ -1,4 +1,5 @@
 import { Transition } from '@headlessui/react'
+import { useTranslation } from 'react-i18next'
 import { XMarkIcon } from './icons'
 
 interface UndoNotificationProps {
@@ -9,6 +10,7 @@ interface UndoNotificationProps {
 }
 
 export function UndoNotification({ show, message, onUndo, onClose }: UndoNotificationProps) {
+  const { t } = useTranslation('common')
   return (
     <div
       aria-live="assertive"
@@ -28,7 +30,7 @@ export function UndoNotification({ show, message, onUndo, onClose }: UndoNotific
                     onClick={onUndo}
                     className="ml-3 shrink-0 rounded-md bg-white text-sm font-medium text-blue-600 hover:text-blue-500 focus:outline-2 focus:outline-offset-2 focus:outline-blue-500 dark:bg-zinc-800 dark:text-blue-400 dark:hover:text-blue-300 dark:focus:outline-blue-400"
                   >
-                    Undo
+                    {t('actions.undo')}
                   </button>
                 </div>
                 <div className="ml-4 flex shrink-0">
@@ -37,7 +39,7 @@ export function UndoNotification({ show, message, onUndo, onClose }: UndoNotific
                     onClick={onClose}
                     className="inline-flex rounded-md text-zinc-400 hover:text-zinc-500 focus:outline-2 focus:outline-offset-2 focus:outline-blue-600 dark:hover:text-white dark:focus:outline-blue-500"
                   >
-                    <span className="sr-only">Close</span>
+                    <span className="sr-only">{t('actions.close')}</span>
                     <XMarkIcon aria-hidden="true" className="h-5 w-5" />
                   </button>
                 </div>

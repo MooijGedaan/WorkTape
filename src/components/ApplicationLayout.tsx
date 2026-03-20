@@ -24,7 +24,6 @@ import {
   ArrowDownTrayIcon,
   SparklesIcon,
   QuestionMarkCircleIcon,
-  CameraIcon,
   CalendarDaysIcon,
   ViewColumnsIcon,
   CheckCircleIcon,
@@ -118,7 +117,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
                 current={currentView === 'calendar'}
               >
                 <CalendarDaysIcon />
-                <SidebarLabel>Calendar</SidebarLabel>
+                <SidebarLabel>{t('navigation.calendar')}</SidebarLabel>
               </SidebarItem>
 
               <SidebarItem
@@ -126,7 +125,7 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
                 current={currentView === 'sprint-board'}
               >
                 <ViewColumnsIcon />
-                <SidebarLabel>Sprint Board</SidebarLabel>
+                <SidebarLabel>{t('navigation.sprintBoard')}</SidebarLabel>
               </SidebarItem>
 
               <SidebarItem
@@ -138,14 +137,6 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               </SidebarItem>
 
               <SidebarItem
-                onClick={(e) => { e.preventDefault(); navigate('screen-capture-test'); }}
-                current={currentView === 'screen-capture-test'}
-              >
-                <CameraIcon />
-                <SidebarLabel>Screen Capture Test</SidebarLabel>
-                
-              </SidebarItem>
-                            <SidebarItem
                 onClick={(e) => { e.preventDefault(); navigate('settings'); }}
                 current={currentView === 'settings'}
               >
@@ -166,12 +157,12 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               >
                 <CheckCircleIcon />
                 <SidebarLabel>
-                  {isDayEnded ? 'Day ended' : isEndingDay ? 'Ending…' : 'End the day'}
+                  {isDayEnded ? t('endDay.ended') : isEndingDay ? t('endDay.ending') : t('endDay.label')}
                 </SidebarLabel>
               </SidebarItem>
 
               <SidebarItem
-                onClick={(e) => { e.preventDefault(); setInfoMessage('Help & Support coming soon!'); }}
+                onClick={(e) => { e.preventDefault(); setInfoMessage(t('endDay.helpComingSoon')); }}
               >
                 <QuestionMarkCircleIcon />
                 <SidebarLabel>{t('navigation.help')}</SidebarLabel>
@@ -194,13 +185,13 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       <Dialog open={showEndDayConfirm} onClose={() => setShowEndDayConfirm(false)}>
-        <DialogTitle>End today's work log?</DialogTitle>
+        <DialogTitle>{t('endDay.confirmTitle')}</DialogTitle>
         <DialogDescription>
-          No new entries can be added after this. You'll be able to generate an AI summary once the day is ended.
+          {t('endDay.confirmDescription')}
         </DialogDescription>
         <DialogActions>
-          <Button plain onClick={() => setShowEndDayConfirm(false)}>Cancel</Button>
-          <Button color="red" onClick={confirmEndDay}>End the day</Button>
+          <Button plain onClick={() => setShowEndDayConfirm(false)}>{t('actions.cancel')}</Button>
+          <Button color="red" onClick={confirmEndDay}>{t('endDay.label')}</Button>
         </DialogActions>
       </Dialog>
     </SidebarLayout>

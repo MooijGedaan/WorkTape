@@ -35,7 +35,8 @@
     "cancel": "Annuleren",
     "create": "Taak aanmaken",
     "delete": "Taak verwijderen",
-    "confirmDelete": "Weet je zeker dat je deze taak wilt verwijderen?"
+    "confirmDelete": "Weet je zeker dat je deze taak wilt verwijderen?",
+    "confirmDeleteTitle": "Taak verwijderen"
   },
   "workLinks": {
     "title": "Werklog-koppelingen",
@@ -51,5 +52,12 @@
   "empty": {
     "title": "Nog geen taken",
     "description": "Klik op \"Taak toevoegen\" om je eerste taak aan te maken."
+  },
+  "loading": "Laden…",
+  "relativeTime": {
+    "justNow": "zojuist",
+    "minutesAgo": "{{count}}m geleden",
+    "hoursAgo": "{{count}}u geleden",
+    "daysAgo": "{{count}}d geleden"
   }
 }

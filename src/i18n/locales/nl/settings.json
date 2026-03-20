@@ -9,6 +9,7 @@
     "description": "Geavanceerde instellingen voor foutopsporing en ontwikkeling."
   },
   "onboardingModal": {
+    "stepOf": "Stap {{step}} van {{total}}",
     "steps": {
       "prompts":     { "title": "Periodieke werkprompts",        "description": "WorkRecall herinnert u op regelmatige intervallen om te loggen waar u aan werkt. Stel uw gewenste frequentie in — elke 30 minuten is een goed startpunt." },
       "autoCapture": { "title": "Automatische werkregistratie",  "description": "Schakel AI-gestuurde automatische registratie in: WorkRecall maakt periodieke schermafbeeldingen, analyseert ze met AI en maakt werklogboekitems — allemaal zonder handmatige invoer." },
@@ -35,10 +36,6 @@
     "disabled": "Uitgeschakeld"
   },
   "sections": {
-    "notifications": {
-      "title": "Meldingen",
-      "comingSoon": "Binnenkort beschikbaar: Beheer meldingsvoorkeuren."
-    },
     "darkMode": {
       "title": "Weergave",
       "description": "Kies uw voorkeurskleurstelsel.",
@@ -47,10 +44,58 @@
         "dark": "Donker",
         "system": "Systeem"
       }
-    },
-    "database": {
-      "title": "Database",
-      "comingSoon": "Binnenkort beschikbaar: Database back-up en exportopties."
     }
+  },
+  "autoLogging": {
+    "title": "Automatische werkregistratie",
+    "description": "Automatisch uw werkactiviteit vastleggen en analyseren met AI.",
+    "enabled": "Ingeschakeld",
+    "disabled": "Uitgeschakeld",
+    "screenshotsPerHour": "Schermafbeeldingen per uur",
+    "screenshotsDescription": "Hoe vaak per uur schermafbeeldingen worden gemaakt (wanneer het scherm verandert). Hogere waarden = gedetailleerdere registratie, maar meer opslag nodig.",
+    "everySeconds": "Elke {{seconds}} seconden",
+    "aiAnalysesPerDay": "AI-analyses per dag",
+    "aiAnalysesDescription": "Hoe vaak per dag AI-analyse wordt uitgevoerd op vastgelegde schermafbeeldingen. Elke analyse verbruikt één OpenAI API-verzoek en maakt een werklogboekitem.",
+    "everyMinutes": "Elke {{minutes}} minuten",
+    "apiUsageToday": "API-gebruik vandaag: {{used}} / {{limit}}",
+    "saveCaptureSettings": "Vastleg-instellingen opslaan",
+    "screenshotsValidation": "Schermafbeeldingen per uur moet tussen 1 en 3600 zijn",
+    "apiRequestsValidation": "API-verzoeken per dag moet tussen 1 en 1440 zijn",
+    "saveSuccess": "Automatische vastleg-instellingen succesvol opgeslagen!",
+    "howItWorks": "Hoe het werkt:",
+    "howItWorksItems": {
+      "screenshots": "Schermafbeeldingen worden gemaakt op uw ingestelde frequentie (alleen wanneer het scherm verandert)",
+      "aiAnalysis": "AI analyseert op uw ingestelde interval en maakt werklogboekitems",
+      "privacy": "Schermafbeeldingen worden na analyse verwijderd (privacy-first)",
+      "idle": "Pauzeert automatisch wanneer de computer inactief is (5+ minuten)"
+    }
+  },
+  "featureTips": {
+    "title": "Functietips",
+    "description": "Kleine hints die verschijnen wanneer u een pagina voor het eerst bezoekt."
+  },
+  "debug": {
+    "title": "Foutopsporingsmodus",
+    "description": "Sla volledige API-verzoeken op (inclusief schermafbeeldingen) voor foutopsporing.",
+    "enabled": "Ingeschakeld",
+    "disabled": "Uitgeschakeld",
+    "warningTitle": "Waarschuwing: Opslag-impact",
+    "warningBody": "Foutopsporingsmodus slaat volledige API-verzoeken op inclusief base64-gecodeerde schermafbeeldingen. Dit zal de databasegrootte aanzienlijk vergroten (5-20MB per verzoek met 10 schermafbeeldingen).",
+    "warningEstimate": "Met {{requests}} verzoeken per dag, verwacht ~{{gb}} GB per dag. Oude foutopsporingslogboeken worden automatisch verwijderd na de bewaarperiode.",
+    "retentionLabel": "Bewaarperiode foutopsporingslogboeken (dagen)",
+    "retentionDescription": "Foutopsporingslogboeken ouder dan dit worden dagelijks automatisch verwijderd om databasegroei te voorkomen.",
+    "retentionValidation": "Bewaardagen moeten tussen 1 en 30 zijn",
+    "saveSuccess": "Foutopsporingsinstellingen succesvol opgeslagen!",
+    "cleanupSuccess": "{{count}} oude foutopsporingslogboekitems opgeruimd",
+    "cleaning": "Opruimen...",
+    "cleanupNow": "Nu opruimen"
+  },
+  "developerTools": {
+    "title": "Ontwikkelaarstools",
+    "description": "Deze acties zijn alleen bedoeld voor ontwikkeling en testen.",
+    "unendDay": "Dag heropenen",
+    "unending": "Heropenen…",
+    "dayEnded": "Vandaag is momenteel beëindigd. Klik om te heropenen.",
+    "dayNotEnded": "Vandaag is niet beëindigd."
   }
 }

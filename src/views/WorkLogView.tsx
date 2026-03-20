@@ -35,7 +35,7 @@ function toLocalDateString(d: Date): string {
 }
 
 export function WorkLogView() {
-  const { t, i18n } = useTranslation(['worklog', 'notifications', 'common']);
+  const { t, i18n } = useTranslation(['worklog', 'notifications', 'common', 'hints']);
   const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const hasShownDataHint = useRef(false);
@@ -98,14 +98,13 @@ export function WorkLogView() {
     const candidateHints: HintId[] = [];
     if (!isSeen('worklog-click-to-edit')) candidateHints.push('worklog-click-to-edit');
     if (sprintTasks.length > 0 && !isSeen('worklog-sprint-linking')) candidateHints.push('worklog-sprint-linking');
-    if (isDayEnded && !isSeen('worklog-regenerate-summary')) candidateHints.push('worklog-regenerate-summary');
 
     const first = candidateHints[0];
     if (!first) return;
     hasShownDataHint.current = true;
     const timer = setTimeout(() => setActiveHint(first), 500);
     return () => clearTimeout(timer);
-  }, [entries.length, sprintTasks.length, isDayEnded]); // re-run as data loads
+  }, [entries.length, sprintTasks.length]); // re-run as data loads
 
   const handleHintDismiss = () => {
     if (activeHint) markSeen(activeHint);
@@ -277,46 +276,6 @@ export function WorkLogView() {
     inputEl?.focus();
   };
 
-  const [regeneratingSummaryDate, setRegeneratingSummaryDate] = useState<string | null>(null);
-
-  const handleRegenerateSummary = async (date: string) => {
-    setRegeneratingSummaryDate(date);
-    try {
-      const database = await getDb();
-
-      const manualEntries = await database.select<Array<{ description: string; timestamp: string }>>(
-        "SELECT description, timestamp FROM work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
-        [date]
-      );
-      const autoEntries = await database.select<Array<{ description: string; timestamp: string }>>(
-        "SELECT description, timestamp FROM auto_work_entries WHERE DATE(timestamp) = ? ORDER BY timestamp ASC",
-        [date]
-      );
-      const allEntries = [...manualEntries, ...autoEntries].sort((a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
-
-      if (allEntries.length < 2) return;
-
-      const entryTuples: [string, string][] = allEntries.map(e => [e.description, e.timestamp]);
-      const generatedSummary = await invoke<string>('generate_daily_summary', {
-        entries: entryTuples,
-        date,
-        language: i18n.language,
-      });
-
-      const now = new Date().toISOString();
-      await database.execute(
-        "INSERT OR REPLACE INTO ai_summaries (date, summary, created_at, updated_at) VALUES (?, ?, COALESCE((SELECT created_at FROM ai_summaries WHERE date = ?), ?), ?)",
-        [date, generatedSummary, date, now, now]
-      );
-    } catch (err) {
-      console.error('Failed to regenerate summary:', err);
-    } finally {
-      setRegeneratingSummaryDate(null);
-    }
-  };
-
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return new Intl.DateTimeFormat('en-US', {
@@ -335,8 +294,8 @@ export function WorkLogView() {
       {activeHintDef && (
         <TooltipHint
           show={activeHint !== null}
-          title={activeHintDef.title}
-          body={activeHintDef.body}
+          title={t(`hints:${activeHint}.title`)}
+          body={t(`hints:${activeHint}.body`)}
           icon={activeHintDef.icon}
           accentColor={activeHintDef.accentColor}
           onDismiss={handleHintDismiss}
@@ -363,7 +322,7 @@ export function WorkLogView() {
         {isDayEnded ? (
           <div className="mb-8 p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
             <p className="text-sm text-zinc-500 dark:text-zinc-400 italic">
-              Today's log is closed. No more entries can be added.
+              {t('worklog:dayClosed')}
             </p>
           </div>
         ) : (
@@ -379,13 +338,13 @@ export function WorkLogView() {
                   disabled={isLoading}
                   className="flex-1"
                 />
-                <Button type="submit" disabled={isLoading} color="blue">
+                <Button type="submit" disabled={isLoading} color="amber">
                   {isLoading ? t('worklog:form.submitting') : t('worklog:form.submit')}
                 </Button>
               </div>
               {sprintTasks.length > 0 && (
                 <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">Link to task:</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">{t('worklog:linkToTask')}</span>
                   <select
                     value={selectedTaskId ?? ''}
                     onChange={(e) => {
@@ -393,9 +352,9 @@ export function WorkLogView() {
                       setSelectedTaskId(val === '' ? null : Number(val));
                     }}
                     disabled={isLoading}
-                    className="flex-1 text-xs rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 text-xs rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">No task</option>
+                    <option value="">{t('worklog:noTask')}</option>
                     {sprintTasks.map((task) => (
                       <option key={task.id} value={task.id}>
                         {task.title}
@@ -448,7 +407,7 @@ export function WorkLogView() {
                           <tr
                             key={`${entry.source}-${entry.id}`}
                             onClick={() => handleEntryClick(entry)}
-                            title={isDayEnded ? undefined : t('worklog:list.clickToEdit', 'Click to edit this entry')}
+                            title={isDayEnded ? undefined : t('worklog:list.clickToEdit')}
                             className={[
                               'transition-colors',
                               !isDayEnded && 'cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:font-medium',
@@ -469,8 +428,8 @@ export function WorkLogView() {
                                   )}
                                 </div>
                                 {entry.source === 'auto' && (
-                                  <span className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-300/10 whitespace-nowrap flex-shrink-0">
-                                    Auto
+                                  <span className="inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-700/10 dark:ring-amber-300/10 whitespace-nowrap flex-shrink-0">
+                                    {t('worklog:autobadge')}
                                   </span>
                                 )}
                               </div>
@@ -490,17 +449,6 @@ export function WorkLogView() {
                         ))}
                       </tbody>
                     </table>
-                    <div className="px-4 pt-2 pb-1">
-                      <button
-                        onClick={() => handleRegenerateSummary(date)}
-                        disabled={regeneratingSummaryDate === date}
-                        className="text-xs italic text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {regeneratingSummaryDate === date
-                          ? '...'
-                          : t('worklog:list.regenerateSummary')}
-                      </button>
-                    </div>
                   </div>
                 ));
               })()}
