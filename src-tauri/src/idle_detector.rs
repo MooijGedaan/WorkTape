@@ -1,9 +1,9 @@
 use device_query::{DeviceQuery, DeviceState};
 use std::time::{Duration, Instant};
-use log::info;
+use log::{info, warn};
 
 pub struct IdleDetector {
-    device_state: DeviceState,
+    device_state: Option<DeviceState>,
     last_activity_time: Instant,
     idle_threshold: Duration,
     last_mouse_pos: (i32, i32),
@@ -12,23 +12,41 @@ pub struct IdleDetector {
 
 impl IdleDetector {
     pub fn new(idle_threshold_minutes: u64) -> Self {
-        let device_state = DeviceState::new();
-        let mouse = device_state.get_mouse();
+        // DeviceState::new() panics on macOS without Accessibility Permissions.
+        // Run it in a background thread so the panic is always catchable,
+        // regardless of the ObjC callback context of the calling thread.
+        let device_state = std::thread::spawn(|| {
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| DeviceState::new())).ok()
+        }).join().unwrap_or(None);
+
+        if device_state.is_none() {
+            warn!("⚠️  Accessibility Permissions not granted — idle detection disabled.");
+            warn!("   To enable: System Settings > Privacy & Security > Accessibility, then add this app.");
+        }
+
+        let last_mouse_pos = device_state.as_ref()
+            .map(|ds| ds.get_mouse().coords)
+            .unwrap_or((0, 0));
 
         Self {
             device_state,
             last_activity_time: Instant::now(),
             idle_threshold: Duration::from_secs(idle_threshold_minutes * 60),
-            last_mouse_pos: mouse.coords,
+            last_mouse_pos,
             last_keys_count: 0,
         }
     }
 
     /// Check if system is currently idle
     pub fn is_idle(&mut self) -> bool {
+        let ds = match &self.device_state {
+            Some(ds) => ds,
+            None => return false, // No permissions — assume not idle
+        };
+
         // Check keyboard and mouse state
-        let keys = self.device_state.get_keys();
-        let mouse = self.device_state.get_mouse();
+        let keys = ds.get_keys();
+        let mouse = ds.get_mouse();
 
         // Check for any activity
         let mut activity_detected = false;
