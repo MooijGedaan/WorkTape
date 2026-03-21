@@ -1751,6 +1751,15 @@ pub fn run() {
                 .filter_level(log::LevelFilter::Info)
                 .init();
 
+            // On Windows, remove native decorations so the custom titlebar is used.
+            // On macOS, keep native decorations (traffic lights + rounded corners via titleBarStyle: Overlay).
+            #[cfg(target_os = "windows")]
+            {
+                if let Some(main_window) = app.get_webview_window("main") {
+                    let _ = main_window.set_decorations(false);
+                }
+            }
+
             // Start periodic prompt timer
             prompt::start_prompt_timer(app.handle().clone());
 

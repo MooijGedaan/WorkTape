@@ -46,7 +46,7 @@ describe("ApplicationLayout", () => {
     expect(screen.getByText("navigation.home")).toBeInTheDocument();
     expect(screen.getByText("navigation.workLog")).toBeInTheDocument();
     expect(screen.getByText("navigation.aiSummary")).toBeInTheDocument();
-    expect(screen.getByText("Calendar")).toBeInTheDocument();
+    expect(screen.getByText("navigation.calendar")).toBeInTheDocument();
     expect(screen.getByText("navigation.export")).toBeInTheDocument();
     expect(screen.getByText("navigation.settings")).toBeInTheDocument();
   });
@@ -56,23 +56,23 @@ describe("ApplicationLayout", () => {
     expect(screen.getByTestId("child-content")).toBeInTheDocument();
   });
 
-  it("clicking Work Log nav item navigates to work-log view", async () => {
+  it("clicking Work Log nav item sets it as current", async () => {
     const user = userEvent.setup();
     renderLayout();
 
     await user.click(screen.getByText("navigation.workLog"));
-    expect(window.location.hash).toBe("#work-log");
+    expect(screen.getByText("navigation.workLog").closest('[data-current="true"]')).not.toBeNull();
   });
 
-  it("clicking Settings nav item navigates to settings view", async () => {
+  it("clicking Settings nav item sets it as current", async () => {
     const user = userEvent.setup();
     renderLayout();
 
     await user.click(screen.getByText("navigation.settings"));
-    expect(window.location.hash).toBe("#settings");
+    expect(screen.getByText("navigation.settings").closest('[data-current="true"]')).not.toBeNull();
   });
 
-  it("clicking Home nav item navigates to home view", async () => {
+  it("clicking Home nav item sets it as current", async () => {
     const user = userEvent.setup();
     renderLayout();
 
@@ -80,7 +80,7 @@ describe("ApplicationLayout", () => {
       await user.click(screen.getByText("navigation.home"));
     });
 
-    expect(window.location.hash).toBe("#home");
+    expect(screen.getByText("navigation.home").closest('[data-current="true"]')).not.toBeNull();
   });
 
   it("renders the TitleBar", () => {

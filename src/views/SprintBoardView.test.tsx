@@ -280,7 +280,13 @@ describe("SprintBoardView", () => {
 
     await waitFor(() => screen.getByRole("dialog"));
 
+    // First click opens the confirm dialog
     await user.click(screen.getByText("taskForm.delete"));
+
+    // Confirm dialog is now open — click the confirm delete button (second occurrence)
+    await waitFor(() => expect(screen.getAllByText("taskForm.delete")).toHaveLength(2));
+    const deleteButtons = screen.getAllByText("taskForm.delete");
+    await user.click(deleteButtons[deleteButtons.length - 1]);
 
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("delete_sprint_task", { id: 7 });

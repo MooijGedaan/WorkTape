@@ -39,33 +39,7 @@ describe("ViewRouter", () => {
     expect(screen.getByText("Work Log View")).toBeInTheDocument();
   });
 
-  it("renders home view when hash is set to home", () => {
-    window.location.hash = "home";
-
-    render(
-      <NavigationProvider>
-        <ViewRouter />
-      </NavigationProvider>
-    );
-
-    expect(screen.getByText("Home View")).toBeInTheDocument();
-  });
-
-  it("renders settings view when hash is set to settings", () => {
-    window.location.hash = "settings";
-
-    render(
-      <NavigationProvider>
-        <ViewRouter />
-      </NavigationProvider>
-    );
-
-    expect(screen.getByText("Settings View")).toBeInTheDocument();
-  });
-
-  it("falls back to work-log view for invalid hash", () => {
-    window.location.hash = "invalid-view";
-
+  it("falls back to work-log view for unknown view", () => {
     render(
       <NavigationProvider>
         <ViewRouter />

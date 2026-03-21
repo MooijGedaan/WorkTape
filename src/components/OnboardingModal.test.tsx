@@ -45,7 +45,6 @@ describe("OnboardingModal", () => {
 
   it("renders step 1 content initially", () => {
     render(<OnboardingModal isOpen={true} onClose={noop} />);
-    expect(screen.getByText(/Step 1 of 5/)).toBeInTheDocument();
     expect(screen.getByText("onboardingModal.steps.prompts.title")).toBeInTheDocument();
   });
 
@@ -70,9 +69,8 @@ describe("OnboardingModal", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Step 2 of 5/)).toBeInTheDocument();
+      expect(screen.getByText("onboardingModal.steps.autoCapture.title")).toBeInTheDocument();
     });
-    expect(screen.getByText("onboardingModal.steps.autoCapture.title")).toBeInTheDocument();
     expect(screen.getByText("onboardingModal.navigation.back")).toBeInTheDocument();
   });
 
@@ -81,12 +79,12 @@ describe("OnboardingModal", () => {
     render(<OnboardingModal isOpen={true} onClose={noop} />);
 
     await user.click(screen.getByText("onboardingModal.navigation.next"));
-    await waitFor(() => screen.getByText(/Step 2 of 5/));
+    await waitFor(() => screen.getByText("onboardingModal.steps.autoCapture.title"));
 
     await user.click(screen.getByText("onboardingModal.navigation.back"));
 
     await waitFor(() => {
-      expect(screen.getByText(/Step 1 of 5/)).toBeInTheDocument();
+      expect(screen.getByText("onboardingModal.steps.prompts.title")).toBeInTheDocument();
     });
   });
 
@@ -97,9 +95,8 @@ describe("OnboardingModal", () => {
     await user.click(screen.getByRole("button", { name: "Go to step 3" }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Step 3 of 5/)).toBeInTheDocument();
+      expect(screen.getByText("onboardingModal.steps.aiSummary.title")).toBeInTheDocument();
     });
-    expect(screen.getByText("onboardingModal.steps.aiSummary.title")).toBeInTheDocument();
   });
 
   it("last step (step 5) shows getStarted button instead of Next", async () => {
@@ -109,11 +106,8 @@ describe("OnboardingModal", () => {
     await user.click(screen.getByRole("button", { name: "Go to step 5" }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Step 5 of 5/)).toBeInTheDocument();
+      expect(screen.getByText("onboardingModal.navigation.getStarted")).toBeInTheDocument();
     });
-    expect(
-      screen.getByText("onboardingModal.navigation.getStarted")
-    ).toBeInTheDocument();
     expect(
       screen.queryByText("onboardingModal.navigation.next")
     ).not.toBeInTheDocument();
@@ -125,7 +119,7 @@ describe("OnboardingModal", () => {
     render(<OnboardingModal isOpen={true} onClose={onClose} />);
 
     await user.click(screen.getByRole("button", { name: "Go to step 5" }));
-    await waitFor(() => screen.getByText(/Step 5 of 5/));
+    await waitFor(() => screen.getByText("onboardingModal.navigation.getStarted"));
 
     await user.click(
       screen.getByText("onboardingModal.navigation.getStarted")

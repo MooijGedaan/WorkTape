@@ -45,6 +45,8 @@ vi.mock("./components/OnboardingModal", () => ({
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: "en" } }),
   I18nextProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  withTranslation: () => (Component: any) => (props: any) => <Component {...props} t={(k: string) => k} i18n={{ language: "en" }} />,
 }));
 
 // Import App after mocks are registered
