@@ -192,19 +192,23 @@ export function WorkLogView() {
     const entryToDelete = entries.find(entry => entry.id === id);
     if (!entryToDelete) return;
 
+    // If there's already a pending deletion, immediately commit it before starting a new one
+    if (undoTimeoutId) {
+      clearTimeout(undoTimeoutId);
+      setUndoTimeoutId(null);
+      if (deletedEntry) {
+        await permanentlyDeleteEntry(deletedEntry);
+      }
+    }
+
     // Store the deleted entry for potential undo
     setDeletedEntry(entryToDelete);
 
     // Optimistically remove from UI
-    setEntries(entries.filter(entry => entry.id !== id));
+    setEntries(prev => prev.filter(entry => entry.id !== id));
 
     // Show undo notification
     setShowUndoNotification(true);
-
-    // Clear any existing timeout
-    if (undoTimeoutId) {
-      clearTimeout(undoTimeoutId);
-    }
 
     // Set timeout to permanently delete after 5 seconds
     const timeoutId = window.setTimeout(() => {

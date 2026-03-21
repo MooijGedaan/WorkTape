@@ -1,10 +1,17 @@
 {
   "title": "Work Calendar",
-  "subtitle": "A day-by-day view of your work history.",
+  "subtitle": "A day-by-day view of your work history. AI summaries are permanent once generated.",
   "loading": "Loading…",
   "dayEnded": "Day ended",
   "today": "Today",
   "entryCount_one": "{{count}} entry",
   "entryCount_other": "{{count}} entries",
-  "noEntries": "No work entries for this day."
+  "noEntries": "No work entries for this day.",
+  "noEntriesThrown": "No work entries found for this day.",
+  "dayInProgress": "Day in progress — end the day to generate a summary.",
+  "generateSummary": "✦ Generate AI summary for this day",
+  "regenerateSummary": "Regenerate AI summary for this day",
+  "generating": "Generating summary…",
+  "regenerating": "Regenerating…",
+  "week": "Week"
 }
