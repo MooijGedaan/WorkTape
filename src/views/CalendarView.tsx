@@ -152,12 +152,14 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
         ) : day.summary ? (
           // AI summary available — show it
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2">
+            <div className="grid gap-y-2" style={{ gridTemplateColumns: 'auto 1fr' }}>
               {(parseSummary(day.summary) ?? [{ label: '', summary: day.summary }]).map((item, i) => (
-                <div key={i} className="flex flex-col gap-0.5">
-                  {item.label && (
-                    <span className="inline-block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded">{item.label}</span>
-                  )}
+                <div key={i} className="contents">
+                  <div className="pr-3 pt-0.5">
+                    {item.label && (
+                      <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded whitespace-nowrap">{item.label}</span>
+                    )}
+                  </div>
                   <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{item.summary}</p>
                 </div>
               ))}
