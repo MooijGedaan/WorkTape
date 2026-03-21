@@ -53,7 +53,7 @@ export function SidebarLayout({
   return (
     <div
       ref={containerRef}
-      className="relative isolate flex flex-col h-screen w-full overflow-hidden bg-zinc-100 dark:bg-gradient-to-b dark:from-slate-950 dark:to-amber-950/10"
+      className="relative isolate flex flex-col h-screen w-full overflow-hidden bg-zinc-100 dark:bg-gradient-to-b dark:from-zinc-950 dark:to-zinc-900"
     >
       {/* Title Bar - spans full width */}
       {titleBar && (
@@ -97,10 +97,10 @@ export function SidebarLayout({
 
         {/* Content */}
         <main
-          className="flex flex-1 flex-col min-h-0"
+          className="flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden"
           style={{ paddingLeft: `${sidebarWidth}px` }}
         >
-          <div className="flex-1 flex flex-col rounded-lg bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10 min-h-0 overflow-auto m-2">
+          <div className="flex-1 flex flex-col rounded-lg bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10 min-h-0 min-w-0 overflow-auto m-2">
             {children}
           </div>
         </main>

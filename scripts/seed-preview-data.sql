@@ -1,4 +1,4 @@
--- Seed script for WorkTape preview/screenshot data
+-- Seed script for WorkTape preview/screenshot data (Mar 16–21, 2026)
 -- Run: sqlite3 ~/Library/Application\ Support/com.worktape.app/worktape.db < scripts/seed-preview-data.sql
 
 -- Clear existing data
@@ -10,7 +10,26 @@ DELETE FROM work_entries;
 DELETE FROM auto_work_entries;
 DELETE FROM ai_summaries;
 
--- ─── Work Entries (spanning 3 days: Mar 19–21, 2026) ─────────────────────────
+-- ─── Work Entries (spanning 6 days: Mar 16–21, 2026) ─────────────────────────
+
+-- March 16 (Monday)
+INSERT INTO work_entries (description, timestamp, next_action) VALUES
+  ('Sprint kickoff standup — aligned on priorities: notification refactor, analytics performance, and CSV hotfix', '2026-03-16T09:10:00Z', NULL),
+  ('Started notification service refactor — mapped existing polling logic and designed RabbitMQ exchange topology', '2026-03-16T10:00:00Z', 'Set up RabbitMQ exchange and queue bindings in staging'),
+  ('Investigated slow analytics dashboard queries — pulled slow query log, identified missing composite index on events table', '2026-03-16T14:30:00Z', 'Test composite index on local dataset before staging rollout');
+
+-- March 17 (Tuesday)
+INSERT INTO work_entries (description, timestamp, next_action) VALUES
+  ('Ran EXPLAIN ANALYZE on analytics dashboard queries — confirmed full table scan on events; drafted index migration', '2026-03-17T09:30:00Z', NULL),
+  ('Drafted new user preferences schema — added granular notification columns with defaults for backward compat', '2026-03-17T11:00:00Z', 'Review schema with team before writing migration'),
+  ('Reproduced CSV export encoding bug using sample Enterprise data — confirmed missing UTF-8 BOM as root cause', '2026-03-17T13:30:00Z', 'Add UTF-8 BOM to CSV export output stream'),
+  ('Scaffolded GitHub Actions workflow for payments service CI — defined build and lint jobs', '2026-03-17T15:00:00Z', 'Add test stage and Slack failure notification');
+
+-- March 18 (Wednesday)
+INSERT INTO work_entries (description, timestamp, next_action) VALUES
+  ('Wrote database migration script for user preferences v2 — handles NULL defaults and existing row back-fill', '2026-03-18T09:45:00Z', NULL),
+  ('Added test stage and Slack webhook to payments CI pipeline — pipeline now runs end-to-end on PR open', '2026-03-18T11:00:00Z', NULL),
+  ('Identified dark mode contrast failures on settings page — 4 text elements below WCAG AA threshold', '2026-03-18T14:00:00Z', 'Apply corrected colour tokens and verify contrast ratios');
 
 -- March 19 (Thursday)
 INSERT INTO work_entries (description, timestamp, next_action) VALUES
@@ -97,13 +116,25 @@ INSERT INTO sprint_task_labels (task_id, label) VALUES
 -- ─── Work Links (connect work entries to sprint tasks) ───────────────────────
 
 INSERT INTO sprint_task_work_links (task_id, entry_source, entry_id, linked_at) VALUES
-  (9, 'manual', 1, '2026-03-19T09:12:00Z'),
-  (8, 'manual', 8, '2026-03-19T16:45:00Z'),
-  (5, 'manual', 10, '2026-03-20T09:40:00Z'),
-  (10, 'manual', 11, '2026-03-20T10:30:00Z'),
-  (11, 'manual', 12, '2026-03-20T11:15:00Z'),
-  (7, 'manual', 14, '2026-03-20T14:00:00Z'),
-  (6, 'manual', 18, '2026-03-21T10:00:00Z');
+  -- March 16–18 entries (IDs 1–10)
+  (5, 'manual', 1, '2026-03-16T09:10:00Z'),
+  (5, 'manual', 2, '2026-03-16T10:00:00Z'),
+  (7, 'manual', 3, '2026-03-16T14:30:00Z'),
+  (7, 'manual', 4, '2026-03-17T09:30:00Z'),
+  (11, 'manual', 5, '2026-03-17T11:00:00Z'),
+  (8, 'manual', 6, '2026-03-17T13:30:00Z'),
+  (9, 'manual', 7, '2026-03-17T15:00:00Z'),
+  (11, 'manual', 8, '2026-03-18T09:45:00Z'),
+  (9, 'manual', 9, '2026-03-18T11:00:00Z'),
+  (10, 'manual', 10, '2026-03-18T14:00:00Z'),
+  -- March 19–21 entries (IDs shifted +10)
+  (9, 'manual', 11, '2026-03-19T09:12:00Z'),
+  (8, 'manual', 18, '2026-03-19T16:45:00Z'),
+  (5, 'manual', 20, '2026-03-20T09:40:00Z'),
+  (10, 'manual', 21, '2026-03-20T10:30:00Z'),
+  (11, 'manual', 22, '2026-03-20T11:15:00Z'),
+  (7, 'manual', 24, '2026-03-20T14:00:00Z'),
+  (6, 'manual', 28, '2026-03-21T10:00:00Z');
 
 -- ─── Next Action History (resolved actions for done tasks) ───────────────────
 

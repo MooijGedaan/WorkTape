@@ -1,10 +1,17 @@
 {
   "title": "Werkkalender",
-  "subtitle": "Een dagelijks overzicht van je werkgeschiedenis.",
+  "subtitle": "Een dagelijks overzicht van je werkgeschiedenis. AI-samenvattingen zijn definitief zodra ze zijn gegenereerd.",
   "loading": "Laden…",
   "dayEnded": "Dag afgesloten",
   "today": "Vandaag",
   "entryCount_one": "{{count}} item",
   "entryCount_other": "{{count}} items",
-  "noEntries": "Geen werkitems voor deze dag."
+  "noEntries": "Geen werkitems voor deze dag.",
+  "noEntriesThrown": "Geen werkitems gevonden voor deze dag.",
+  "dayInProgress": "Dag bezig — sluit de dag af om een samenvatting te genereren.",
+  "generateSummary": "✦ Genereer AI-samenvatting voor deze dag",
+  "regenerateSummary": "AI-samenvatting opnieuw genereren voor deze dag",
+  "generating": "Samenvatting genereren…",
+  "regenerating": "Opnieuw genereren…",
+  "week": "Week"
 }

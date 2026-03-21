@@ -2,6 +2,7 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 use tauri::Manager;
 use tauri_plugin_autostart::MacosLauncher;
 
+mod openai;
 mod prompt;
 
 #[tauri::command]
@@ -1221,6 +1222,26 @@ async fn is_day_ended(app: tauri::AppHandle, date: String) -> Result<bool, Strin
     Ok(result.0 > 0)
 }
 
+#[tauri::command]
+async fn generate_grouped_daily_summary(
+    // Each group: (optional task_title, vec of (description, timestamp))
+    groups: Vec<(Option<String>, Vec<(String, String)>)>,
+    date: String,
+    language: String,
+) -> Result<String, String> {
+    let task_groups: Vec<openai::TaskGroup> = groups
+        .into_iter()
+        .map(|(task_title, entries)| openai::TaskGroup {
+            task_title,
+            entries: entries
+                .into_iter()
+                .map(|(description, timestamp)| openai::WorkEntry { description, timestamp })
+                .collect(),
+        })
+        .collect();
+    openai::generate_grouped_summary(task_groups, &date, &language).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Load environment variables from .env file
@@ -1476,7 +1497,8 @@ pub fn run() {
             suggest_work_links,
             end_day,
             unend_day,
-            is_day_ended
+            is_day_ended,
+            generate_grouped_daily_summary
         ])
         .setup(|app| {
             // Initialize logging with default INFO level

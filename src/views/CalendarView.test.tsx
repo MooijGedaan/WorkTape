@@ -78,7 +78,14 @@ describe("CalendarView", () => {
     const dateStr = yesterday.toISOString().split("T")[0];
 
     (db.select as Mock)
+      .mockResolvedValueOnce([]) // ai_summaries
       .mockResolvedValueOnce([{ date: dateStr, cnt: 3 }]) // manual counts
+      .mockResolvedValueOnce([]) // auto counts
+      .mockResolvedValueOnce([
+        { date: dateStr, description: 'Reviewed PR', timestamp: `${dateStr}T10:00:00` },
+        { date: dateStr, description: 'Fixed bug', timestamp: `${dateStr}T11:00:00` },
+        { date: dateStr, description: 'Team standup', timestamp: `${dateStr}T09:00:00` },
+      ]) // all entries
       .mockResolvedValueOnce([]); // day endings
 
     render(<CalendarView />);
