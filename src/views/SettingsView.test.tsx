@@ -48,9 +48,6 @@ describe("SettingsView", () => {
     // Default invoke responses
     (invoke as Mock).mockImplementation((cmd: string) => {
       switch (cmd) {
-        case "get_auto_logging_status": return Promise.resolve(false);
-        case "get_auto_capture_settings": return Promise.resolve([360, 96]);
-        case "get_api_usage_today": return Promise.resolve(0);
         case "get_debug_mode": return Promise.resolve(false);
         case "get_debug_logs_retention_days": return Promise.resolve(7);
         default: return Promise.resolve(null);
@@ -82,14 +79,6 @@ describe("SettingsView", () => {
     });
   });
 
-  it("renders auto-logging toggle", async () => {
-    render(<SettingsView />);
-
-    await waitFor(() => {
-      expect(screen.getByText("settings:autoLogging.title")).toBeInTheDocument();
-    });
-  });
-
   it("renders theme buttons (light, dark, system)", async () => {
     render(<SettingsView />);
 
@@ -114,22 +103,6 @@ describe("SettingsView", () => {
 
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("set_prompt_interval", expect.objectContaining({ minutes: expect.any(Number) }));
-    });
-  });
-
-  it("calls start_auto_logging when toggle is enabled", async () => {
-    const user = userEvent.setup();
-    render(<SettingsView />);
-
-    await waitFor(() => screen.getByText("settings:autoLogging.title"));
-
-    // The switch for auto-logging — find it by role
-    const switches = screen.getAllByRole("switch");
-    // Second switch is the auto-logging toggle (first is Launch on Startup)
-    await user.click(switches[1]);
-
-    await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("start_auto_logging");
     });
   });
 

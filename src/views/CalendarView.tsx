@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { invoke } from '@tauri-apps/api/core';
 import { useTauriEvent } from '../hooks/useTauriEvent';
 import { getDb } from '../hooks/useDatabase';
 import { Heading } from '../components/catalyst/heading';
@@ -10,26 +9,8 @@ import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
 import { TooltipHint } from '../components/TooltipHint';
 import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
 
-interface SummaryItem {
-  label: string;
-  summary: string;
-}
-
-function parseSummary(raw: string | null): SummaryItem[] | null {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as SummaryItem[];
-  } catch {
-    // Legacy plain-text summary — wrap as single unlabeled item
-    return [{ label: '', summary: raw }];
-  }
-  return null;
-}
-
 interface DayData {
   date: string; // YYYY-MM-DD
-  summary: string | null;
   entryCount: number;
   isToday: boolean;
   isDayEnded: boolean;
@@ -96,25 +77,9 @@ function formatDayHeader(dateStr: string): { dayNum: string; dayName: string } {
   };
 }
 
-function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string) => Promise<void> }) {
+function DayCard({ day }: { day: DayData }) {
   const { t } = useTranslation('calendar');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { dayNum, dayName } = formatDayHeader(day.date);
-
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    setError(null);
-    try {
-      await onGenerate(day.date);
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const canGenerate = !day.isToday || day.isDayEnded;
 
   return (
     <div className={`w-full border rounded-xl bg-white dark:bg-zinc-900 overflow-hidden border-l-3 ${
@@ -147,54 +112,12 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
 
       {/* Body */}
       <div className="px-5 py-4">
-        {day.summary ? (
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2">
-              {(parseSummary(day.summary) ?? [{ label: '', summary: day.summary }]).map((item, i) => (
-                <div key={i} className="flex flex-col gap-0.5">
-                  {item.label && (
-                    <span className="inline-block text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded">{item.label}</span>
-                  )}
-                  <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{item.summary}</p>
-                </div>
-              ))}
-            </div>
-            {error && (
-              <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
-            )}
-            {canGenerate && (
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="self-start text-xs italic text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isGenerating ? t('regenerating') : t('regenerateSummary')}
-              </button>
-            )}
-          </div>
+        {day.entryCount === 0 ? (
+          <p className="text-sm text-zinc-400 dark:text-zinc-600 italic">{t('noEntries')}</p>
         ) : (
-          <div className="flex flex-col gap-2">
-            {day.entryCount === 0 ? (
-              <p className="text-sm text-zinc-400 dark:text-zinc-600 italic">{t('noEntries')}</p>
-            ) : canGenerate ? (
-              <>
-                {error && (
-                  <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
-                )}
-                <button
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className="self-start text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isGenerating ? t('generating') : t('generateSummary')}
-                </button>
-              </>
-            ) : (
-              <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">
-                {t('dayInProgress')}
-              </p>
-            )}
-          </div>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {t('entryCount', { count: day.entryCount })}
+          </p>
         )}
       </div>
     </div>
@@ -202,7 +125,7 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
 }
 
 export function CalendarView() {
-  const { t, i18n } = useTranslation(['calendar', 'hints']);
+  const { t } = useTranslation(['calendar', 'hints']);
   const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [weeks, setWeeks] = useState<WeekGroup[]>([]);
@@ -214,22 +137,13 @@ export function CalendarView() {
       const database = await getDb();
       const todayStr = toLocalDateString(new Date());
 
-      // Load summaries
-      const summaries = await database.select<Array<{ date: string; summary: string }>>(
-        'SELECT date, summary FROM ai_summaries'
-      );
-      const summaryMap = new Map(summaries.map((s) => [s.date, s.summary]));
-
       // Load entry counts per day
       const manualCounts = await database.select<Array<{ date: string; cnt: number }>>(
         "SELECT DATE(timestamp) as date, COUNT(*) as cnt FROM work_entries GROUP BY DATE(timestamp)"
       );
-      const autoCounts = await database.select<Array<{ date: string; cnt: number }>>(
-        "SELECT DATE(timestamp) as date, COUNT(*) as cnt FROM auto_work_entries GROUP BY DATE(timestamp)"
-      );
 
       const countMap = new Map<string, number>();
-      for (const row of [...manualCounts, ...autoCounts]) {
+      for (const row of manualCounts) {
         countMap.set(row.date, (countMap.get(row.date) ?? 0) + row.cnt);
       }
 
@@ -245,7 +159,6 @@ export function CalendarView() {
 
       const dayData: DayData[] = dates.map((date) => ({
         date,
-        summary: summaryMap.get(date) ?? null,
         entryCount: countMap.get(date) ?? 0,
         isToday: date === todayStr,
         isDayEnded: date === todayStr ? isDayEnded : false,
@@ -278,69 +191,6 @@ export function CalendarView() {
     if (activeHint) markSeen(activeHint);
     setActiveHint(null);
   };
-
-  const handleGenerate = useCallback(async (date: string) => {
-    const database = await getDb();
-
-    // Fetch manual entries with their linked task title (if any)
-    const manualEntries = await database.select<Array<{ description: string; timestamp: string; task_id: number | null; task_title: string | null }>>(
-      `SELECT we.description, we.timestamp, wl.task_id, st.title as task_title
-       FROM work_entries we
-       LEFT JOIN sprint_task_work_links wl ON wl.entry_source = 'manual' AND wl.entry_id = we.id
-       LEFT JOIN sprint_tasks st ON st.id = wl.task_id
-       WHERE DATE(we.timestamp) = ?
-       ORDER BY we.timestamp ASC`,
-      [date]
-    );
-    // Fetch auto entries with their linked task title (if any)
-    const autoEntries = await database.select<Array<{ description: string; timestamp: string; task_id: number | null; task_title: string | null }>>(
-      `SELECT awe.description, awe.timestamp, wl.task_id, st.title as task_title
-       FROM auto_work_entries awe
-       LEFT JOIN sprint_task_work_links wl ON wl.entry_source = 'auto' AND wl.entry_id = awe.id
-       LEFT JOIN sprint_tasks st ON st.id = wl.task_id
-       WHERE DATE(awe.timestamp) = ?
-       ORDER BY awe.timestamp ASC`,
-      [date]
-    );
-
-    const allEntries = [...manualEntries, ...autoEntries].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-
-    if (allEntries.length < 1) {
-      throw new Error(t('calendar:noEntriesThrown'));
-    }
-
-    // Group entries by task_id (null = ungrouped)
-    const groupMap = new Map<string, { taskTitle: string | null; entries: [string, string][] }>();
-    for (const entry of allEntries) {
-      const key = entry.task_id != null ? String(entry.task_id) : '__ungrouped__';
-      if (!groupMap.has(key)) {
-        groupMap.set(key, { taskTitle: entry.task_title ?? null, entries: [] });
-      }
-      groupMap.get(key)!.entries.push([entry.description, entry.timestamp]);
-    }
-
-    // Convert to the format expected by generate_grouped_daily_summary
-    const groups: [string | null, [string, string][]][] = Array.from(groupMap.values()).map(
-      (g) => [g.taskTitle, g.entries]
-    );
-
-    const generatedSummary = await invoke<string>('generate_grouped_daily_summary', {
-      groups,
-      date,
-      language: i18n.language,
-    });
-
-    const now = new Date().toISOString();
-    await database.execute(
-      "INSERT OR REPLACE INTO ai_summaries (date, summary, created_at, updated_at) VALUES (?, ?, COALESCE((SELECT created_at FROM ai_summaries WHERE date = ?), ?), ?)",
-      [date, generatedSummary, date, now, now]
-    );
-
-    // Refresh
-    await loadData();
-  }, [loadData]);
 
   const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
 
@@ -386,7 +236,7 @@ export function CalendarView() {
                     key={day.date}
                     variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
                   >
-                    <DayCard day={day} onGenerate={handleGenerate} />
+                    <DayCard day={day} />
                   </motion.div>
                 ))}
               </motion.div>

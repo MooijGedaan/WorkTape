@@ -3,7 +3,6 @@
   "navigation": {
     "home": "Home",
     "workLog": "Work Log",
-    "aiSummary": "AI Summary",
     "export": "Export",
     "settings": "Settings",
     "help": "Help",
@@ -50,7 +49,7 @@
     "ending": "Ending…",
     "ended": "Day ended",
     "confirmTitle": "End today's work log?",
-    "confirmDescription": "No new entries can be added after this. You'll be able to generate an AI summary once the day is ended.",
+    "confirmDescription": "No new entries can be added after this.",
     "helpComingSoon": "Help & Support coming soon!"
   },
   "errors": {

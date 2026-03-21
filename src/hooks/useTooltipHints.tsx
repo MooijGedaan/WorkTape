@@ -6,8 +6,7 @@ export type HintId =
   | 'sprint-drag-drop'
   | 'sprint-next-action'
   | 'calendar-week-navigation'
-  | 'home-stats'
-  | 'settings-auto-capture';
+  | 'home-stats';
 
 interface TooltipHintsContextValue {
   isSeen: (id: HintId) => boolean;

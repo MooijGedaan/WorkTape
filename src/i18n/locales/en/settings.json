@@ -12,8 +12,6 @@
     "stepOf": "Step {{step}} of {{total}}",
     "steps": {
       "prompts":     { "title": "Periodic Work Prompts",       "description": "WorkTape reminds you at regular intervals to log what you're working on. Set your preferred frequency — every 30 minutes is a great starting point." },
-      "autoCapture": { "title": "Automatic Work Capture",      "description": "Enable AI-powered automatic capture: WorkTape takes periodic screenshots, analyzes them with AI, and creates work log entries — all without any manual input." },
-      "aiSummary":   { "title": "AI-Powered Summaries",        "description": "Generate narrative summaries of your work day or week with a single click. Perfect for standups, performance reviews, and end-of-sprint retrospectives." },
       "sprintBoard": { "title": "Sprint Board",                "description": "Manage your tasks on a visual Kanban board. Link work log entries to tasks to automatically track how much time you spent on each." },
       "export":      { "title": "Data Export",                 "description": "Export your work log entries as CSV or JSON. Use your data for career advocacy, freelance invoicing, or reporting." }
     },
@@ -44,30 +42,6 @@
         "dark": "Dark",
         "system": "System"
       }
-    }
-  },
-  "autoLogging": {
-    "title": "Automatic Work Logging",
-    "description": "Automatically capture and analyze your work activity using AI.",
-    "enabled": "Enabled",
-    "disabled": "Disabled",
-    "screenshotsPerHour": "Screenshots per hour",
-    "screenshotsDescription": "How many times per hour to capture screenshots (when screen changes). Higher values = more granular tracking, but more storage needed.",
-    "everySeconds": "Every {{seconds}} seconds",
-    "aiAnalysesPerDay": "AI analyses per day",
-    "aiAnalysesDescription": "How many times per day to run AI analysis on captured screenshots. Each analysis consumes one OpenAI API request and creates a work log entry.",
-    "everyMinutes": "Every {{minutes}} minutes",
-    "apiUsageToday": "API usage today: {{used}} / {{limit}}",
-    "saveCaptureSettings": "Save Capture Settings",
-    "screenshotsValidation": "Screenshots per hour must be between 1 and 3600",
-    "apiRequestsValidation": "API requests per day must be between 1 and 1440",
-    "saveSuccess": "Auto-capture settings saved successfully!",
-    "howItWorks": "How it works:",
-    "howItWorksItems": {
-      "screenshots": "Screenshots taken at your configured rate (only when screen changes)",
-      "aiAnalysis": "AI analyzes at your configured interval and creates work log entries",
-      "privacy": "Screenshots deleted after analysis (privacy-first)",
-      "idle": "Automatically pauses when computer is idle (5+ minutes)"
     }
   },
   "featureTips": {

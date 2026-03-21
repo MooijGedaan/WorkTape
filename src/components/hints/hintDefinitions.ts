@@ -2,7 +2,7 @@ import type { HintId } from '../../hooks/useTooltipHints';
 
 export interface HintDefinition {
   id: HintId;
-  icon: 'cursor' | 'link' | 'sparkles' | 'drag' | 'calendar' | 'chart' | 'camera';
+  icon: 'cursor' | 'link' | 'sparkles' | 'drag' | 'calendar' | 'chart';
   accentColor: string;
 }
 
@@ -36,10 +36,5 @@ export const HINT_DEFINITIONS: Record<HintId, HintDefinition> = {
     id: 'home-stats',
     icon: 'chart',
     accentColor: 'text-green-500 dark:text-green-400',
-  },
-  'settings-auto-capture': {
-    id: 'settings-auto-capture',
-    icon: 'camera',
-    accentColor: 'text-blue-500 dark:text-blue-400',
   },
 };

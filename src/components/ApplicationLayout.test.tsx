@@ -45,7 +45,6 @@ describe("ApplicationLayout", () => {
 
     expect(screen.getByText("navigation.home")).toBeInTheDocument();
     expect(screen.getByText("navigation.workLog")).toBeInTheDocument();
-    expect(screen.getByText("navigation.aiSummary")).toBeInTheDocument();
     expect(screen.getByText("navigation.calendar")).toBeInTheDocument();
     expect(screen.getByText("navigation.export")).toBeInTheDocument();
     expect(screen.getByText("navigation.settings")).toBeInTheDocument();

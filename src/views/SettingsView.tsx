@@ -24,19 +24,14 @@ export function SettingsView() {
   const { t } = useTranslation(['settings', 'common', 'hints']);
   const { theme, setTheme } = useTheme();
   const { showOnboarding } = useNavigation();
-  const { isSeen, markSeen, isAllDisabled, disableAll, enableAll } = useTooltipHints();
+  const { markSeen, isAllDisabled, disableAll, enableAll } = useTooltipHints();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [developerOpen, setDeveloperOpen] = useState(false);
   const [launchOnStartup, setLaunchOnStartup] = useState<boolean>(false);
   const [promptInterval, setPromptInterval] = useState<number>(30);
-  const [autoLoggingEnabled, setAutoLoggingEnabled] = useState<boolean>(false);
-  const [screenshotsPerHour, setScreenshotsPerHour] = useState<number>(360);
-  const [apiRequestsPerDay, setApiRequestsPerDay] = useState<number>(96);
-  const [apiUsageToday, setApiUsageToday] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [autoCaptureSaveMessage, setAutoCaptureSaveMessage] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState<boolean>(false);
   const [debugLogsRetentionDays, setDebugLogsRetentionDays] = useState<number>(7);
   const [debugSaveMessage, setDebugSaveMessage] = useState<string | null>(null);
@@ -50,15 +45,6 @@ export function SettingsView() {
   useEffect(() => {
     loadSettings();
   }, []);
-
-  useEffect(() => {
-    if (isAllDisabled) return;
-    const hints: HintId[] = ['settings-auto-capture'];
-    const first = hints.find(h => !isSeen(h));
-    if (!first) return;
-    const timer = setTimeout(() => setActiveHint(first), 500);
-    return () => clearTimeout(timer);
-  }, []); // mount-only
 
   const handleHintDismiss = () => {
     if (activeHint) markSeen(activeHint);
@@ -76,19 +62,6 @@ export function SettingsView() {
       if (result.length > 0) {
         setPromptInterval(parseInt(result[0].value));
       }
-
-      // Load auto-logging status
-      const status = await invoke<boolean>('get_auto_logging_status');
-      setAutoLoggingEnabled(status);
-
-      // Load auto-capture settings
-      const [screenshots, apiRequests] = await invoke<[number, number]>('get_auto_capture_settings');
-      setScreenshotsPerHour(screenshots);
-      setApiRequestsPerDay(apiRequests);
-
-      // Load API usage today
-      const usage = await invoke<number>('get_api_usage_today');
-      setApiUsageToday(usage);
 
       // Load launch on startup setting
       const autostartEnabled = await invoke<boolean>('get_autostart_enabled');
@@ -146,61 +119,12 @@ export function SettingsView() {
     }
   };
 
-  const saveAutoCaptureSettings = async () => {
-    try {
-      setIsSaving(true);
-      setAutoCaptureSaveMessage(null);
-
-      // Validate input
-      if (screenshotsPerHour < 1 || screenshotsPerHour > 3600) {
-        setAutoCaptureSaveMessage(t('settings:autoLogging.screenshotsValidation'));
-        return;
-      }
-
-      if (apiRequestsPerDay < 1 || apiRequestsPerDay > 1440) {
-        setAutoCaptureSaveMessage(t('settings:autoLogging.apiRequestsValidation'));
-        return;
-      }
-
-      // Save to database and update the service
-      await invoke('update_auto_capture_settings', {
-        screenshotsPerHour,
-        apiRequestsPerDay
-      });
-
-      setAutoCaptureSaveMessage(t('settings:autoLogging.saveSuccess'));
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setAutoCaptureSaveMessage(null), 3000);
-    } catch (error) {
-      console.error('Failed to save auto-capture settings:', error);
-      setAutoCaptureSaveMessage(`${t('common:status.error')}: ${error}`);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const toggleLaunchOnStartup = async (enabled: boolean) => {
     try {
       await invoke('set_autostart_enabled', { enabled });
       setLaunchOnStartup(enabled);
     } catch (error) {
       console.error('Failed to toggle launch on startup:', error);
-      setErrorMessage(error instanceof Error ? error.message : String(error));
-    }
-  };
-
-  const toggleAutoLogging = async (enabled: boolean) => {
-    try {
-      if (enabled) {
-        await invoke('start_auto_logging');
-      } else {
-        await invoke('stop_auto_logging');
-      }
-
-      setAutoLoggingEnabled(enabled);
-    } catch (error) {
-      console.error('Failed to toggle auto-logging:', error);
       setErrorMessage(error instanceof Error ? error.message : String(error));
     }
   };
@@ -361,103 +285,6 @@ export function SettingsView() {
         </div>
 
         <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
-          <h3 className="text-lg font-semibold text-zinc-950 dark:text-white">
-            {t('settings:autoLogging.title')}
-          </h3>
-          <Text className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {t('settings:autoLogging.description')}
-          </Text>
-
-          <div className="mt-4 flex items-center gap-3">
-            <Switch
-              checked={autoLoggingEnabled}
-              onChange={toggleAutoLogging}
-              disabled={isLoading}
-            />
-            <Text className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-              {autoLoggingEnabled ? t('settings:autoLogging.enabled') : t('settings:autoLogging.disabled')}
-            </Text>
-          </div>
-
-          <div className="mt-6 space-y-4">
-            <Field>
-              <Label>{t('settings:autoLogging.screenshotsPerHour')}</Label>
-              <Description>
-                {t('settings:autoLogging.screenshotsDescription')}
-              </Description>
-              <div className="flex gap-3 items-end mt-2">
-                <div className="flex-1 max-w-xs">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="3600"
-                    value={screenshotsPerHour}
-                    onChange={(e) => setScreenshotsPerHour(parseInt(e.target.value) || 360)}
-                    disabled={isLoading || isSaving}
-                  />
-                </div>
-                <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {t('settings:autoLogging.everySeconds', { seconds: Math.round(3600 / screenshotsPerHour) })}
-                </Text>
-              </div>
-            </Field>
-
-            <Field>
-              <Label>{t('settings:autoLogging.aiAnalysesPerDay')}</Label>
-              <Description>
-                {t('settings:autoLogging.aiAnalysesDescription')}
-              </Description>
-              <div className="flex gap-3 items-end mt-2">
-                <div className="flex-1 max-w-xs">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="1440"
-                    value={apiRequestsPerDay}
-                    onChange={(e) => setApiRequestsPerDay(parseInt(e.target.value) || 96)}
-                    disabled={isLoading || isSaving}
-                  />
-                </div>
-                <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {t('settings:autoLogging.everyMinutes', { minutes: Math.round(1440 / apiRequestsPerDay) })}
-                </Text>
-              </div>
-              <Text className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                {t('settings:autoLogging.apiUsageToday', { used: apiUsageToday, limit: apiRequestsPerDay })}
-              </Text>
-            </Field>
-
-            <div className="flex gap-3">
-              <Button
-                onClick={saveAutoCaptureSettings}
-                disabled={isLoading || isSaving}
-                color="amber"
-              >
-                {isSaving ? t('common:status.saving') : t('settings:autoLogging.saveCaptureSettings')}
-              </Button>
-            </div>
-
-            {autoCaptureSaveMessage && (
-              <Text className={`text-sm ${autoCaptureSaveMessage.includes(t('common:status.error')) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                {autoCaptureSaveMessage}
-              </Text>
-            )}
-          </div>
-
-          <div className="mt-4 rounded-lg bg-amber-50 p-4 text-sm dark:bg-amber-950/20">
-            <p className="font-semibold text-amber-900 dark:text-amber-100">
-              {t('settings:autoLogging.howItWorks')}
-            </p>
-            <ul className="mt-2 list-disc list-inside space-y-1 text-amber-800 dark:text-amber-200">
-              <li>{t('settings:autoLogging.howItWorksItems.screenshots')}</li>
-              <li>{t('settings:autoLogging.howItWorksItems.aiAnalysis')}</li>
-              <li>{t('settings:autoLogging.howItWorksItems.privacy')}</li>
-              <li>{t('settings:autoLogging.howItWorksItems.idle')}</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
           <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
             {t('settings:sections.darkMode.title')}
           </h3>
@@ -569,9 +396,6 @@ export function SettingsView() {
                       </p>
                       <p className="mt-2 text-yellow-800 dark:text-yellow-200">
                         {t('settings:debug.warningBody')}
-                      </p>
-                      <p className="mt-2 text-yellow-800 dark:text-yellow-200">
-                        {t('settings:debug.warningEstimate', { requests: apiRequestsPerDay, gb: Math.round(apiRequestsPerDay * 12 / 1024) })}
                       </p>
                     </div>
                   )}

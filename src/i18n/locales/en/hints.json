@@ -17,14 +17,10 @@
   },
   "calendar-week-navigation": {
     "title": "Browse past weeks",
-    "body": "Scroll down to see earlier weeks. Each day shows your entry count and AI summary."
+    "body": "Scroll down to see earlier weeks."
   },
   "home-stats": {
     "title": "Your logging streak",
     "body": "WorkTape tracks your daily logging streak. Log at least one entry each day to keep it going."
-  },
-  "settings-auto-capture": {
-    "title": "Auto-capture works in the background",
-    "body": "Enable Automatic Work Logging to let WorkTape capture your activity silently — no manual prompts needed."
   }
 }

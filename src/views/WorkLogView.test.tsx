@@ -117,8 +117,7 @@ describe("WorkLogView", () => {
     const { default: Database } = await import("@tauri-apps/plugin-sql");
     const db = await (Database.load as Mock)();
     (db.select as Mock)
-      .mockResolvedValueOnce([{ id: 1, description: "Task A", timestamp: "2026-03-11T09:00:00Z", source: "manual" }])
-      .mockResolvedValueOnce([]); // auto entries
+      .mockResolvedValueOnce([{ id: 1, description: "Task A", timestamp: "2026-03-11T09:00:00Z", source: "manual" }]);
 
     render(<WorkLogView />);
 
@@ -136,8 +135,7 @@ describe("WorkLogView", () => {
     const { default: Database } = await import("@tauri-apps/plugin-sql");
     const db = await (Database.load as Mock)();
     (db.select as Mock)
-      .mockResolvedValueOnce([{ id: 1, description: "Task A", timestamp: "2026-03-11T09:00:00Z", source: "manual" }])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([{ id: 1, description: "Task A", timestamp: "2026-03-11T09:00:00Z", source: "manual" }]);
 
     render(<WorkLogView />);
 
@@ -157,8 +155,7 @@ describe("WorkLogView", () => {
     const { default: Database } = await import("@tauri-apps/plugin-sql");
     const db = await (Database.load as Mock)();
     (db.select as Mock)
-      .mockResolvedValueOnce([{ id: 1, description: "Task to undo", timestamp: "2026-03-11T09:00:00Z", source: "manual" }])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([{ id: 1, description: "Task to undo", timestamp: "2026-03-11T09:00:00Z", source: "manual" }]);
 
     render(<WorkLogView />);
 
@@ -178,21 +175,6 @@ describe("WorkLogView", () => {
     // Entry is restored
     await waitFor(() => {
       expect(screen.getByText("Task to undo")).toBeInTheDocument();
-    });
-  });
-
-  it("auto entries show the Auto badge", async () => {
-    const { default: Database } = await import("@tauri-apps/plugin-sql");
-    const db = await (Database.load as Mock)();
-    (db.select as Mock)
-      .mockResolvedValueOnce([]) // manual
-      .mockResolvedValueOnce([{ id: 2, description: "Auto-detected work", timestamp: "2026-03-11T10:00:00Z", source: "auto", screenshots_count: 3 }]);
-
-    render(<WorkLogView />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Auto-detected work")).toBeInTheDocument();
-      expect(screen.getByText("worklog:autobadge")).toBeInTheDocument();
     });
   });
 
@@ -225,8 +207,7 @@ describe("WorkLogView", () => {
     const { default: Database } = await import("@tauri-apps/plugin-sql");
     const db = await (Database.load as Mock)();
     (db.select as Mock)
-      .mockResolvedValueOnce([{ id: 1, description: "Refactored auth module", timestamp: "2026-03-11T09:00:00Z", source: "manual", linked_task_id: null }])
-      .mockResolvedValueOnce([]); // auto entries
+      .mockResolvedValueOnce([{ id: 1, description: "Refactored auth module", timestamp: "2026-03-11T09:00:00Z", source: "manual", linked_task_id: null }]);
 
     render(<WorkLogView />);
 

@@ -1,13 +1,8 @@
 use tauri_plugin_sql::{Migration, MigrationKind};
-use tauri::{Manager, async_runtime};
+use tauri::Manager;
 use tauri_plugin_autostart::MacosLauncher;
 
 mod prompt;
-mod openai;
-mod screenshot;
-mod smart_capture;
-mod idle_detector;
-mod auto_logger;
 
 #[tauri::command]
 fn close_prompt_after_save(app: tauri::AppHandle, interval_minutes: u64) -> Result<(), String> {
@@ -50,252 +45,6 @@ fn set_prompt_interval(app: tauri::AppHandle, minutes: u64) -> Result<(), String
     Ok(())
 }
 
-#[tauri::command]
-async fn generate_daily_summary(
-    entries: Vec<(String, String)>,
-    date: String,
-    language: String,
-) -> Result<String, String> {
-    // Call the OpenAI service to generate summary
-    openai::generate_summary(entries, &date, &language).await
-}
-
-#[tauri::command]
-async fn generate_grouped_daily_summary(
-    // Each group: (optional task_title, vec of (description, timestamp))
-    groups: Vec<(Option<String>, Vec<(String, String)>)>,
-    date: String,
-    language: String,
-) -> Result<String, String> {
-    let task_groups: Vec<openai::TaskGroup> = groups
-        .into_iter()
-        .map(|(task_title, entries)| openai::TaskGroup {
-            task_title,
-            entries: entries
-                .into_iter()
-                .map(|(description, timestamp)| openai::WorkEntry { description, timestamp })
-                .collect(),
-        })
-        .collect();
-    openai::generate_grouped_summary(task_groups, &date, &language).await
-}
-
-#[tauri::command]
-fn test_screenshot_capture() -> Result<Vec<screenshot::ScreenshotData>, String> {
-    // Check permissions (mainly for macOS)
-    if !screenshot::check_screen_recording_permission() {
-        return Err(
-            "Screen Recording permission required. Please grant permission in System Settings → Privacy & Security → Screen Recording".to_string()
-        );
-    }
-
-    // Capture all monitors
-    screenshot::capture_all_monitors()
-}
-
-#[tauri::command]
-async fn capture_and_analyze_screen() -> Result<String, String> {
-    // Check permissions (mainly for macOS)
-    if !screenshot::check_screen_recording_permission() {
-        return Err(
-            "Screen Recording permission required. Please grant permission in System Settings → Privacy & Security → Screen Recording".to_string()
-        );
-    }
-
-    // Capture all monitors
-    let screenshots = screenshot::capture_all_monitors()?;
-
-    // Extract base64 image data
-    let base64_images: Vec<String> = screenshots
-        .into_iter()
-        .map(|s| s.image_base64)
-        .collect();
-
-    // Analyze with OpenAI GPT-4o vision
-    openai::analyze_screenshots(base64_images).await
-}
-
-#[tauri::command]
-fn start_auto_logging(auto_logger: tauri::State<auto_logger::AutoLoggerService>) -> Result<(), String> {
-    auto_logger.enable();
-    Ok(())
-}
-
-#[tauri::command]
-fn stop_auto_logging(auto_logger: tauri::State<auto_logger::AutoLoggerService>) -> Result<(), String> {
-    auto_logger.disable();
-    Ok(())
-}
-
-#[tauri::command]
-fn get_auto_logging_status(auto_logger: tauri::State<auto_logger::AutoLoggerService>) -> Result<bool, String> {
-    Ok(auto_logger.is_enabled())
-}
-
-#[derive(serde::Serialize)]
-struct DebugStats {
-    is_enabled: bool,
-    is_idle: bool,
-    time_since_last_capture: u64,
-    screenshots_in_buffer: usize,
-    last_change_score: u32,
-    total_captures_today: u64,
-    total_analyses_today: u64,
-    last_analysis_time: Option<String>,
-}
-
-#[tauri::command]
-fn get_auto_log_debug_stats(
-    auto_logger: tauri::State<auto_logger::AutoLoggerService>
-) -> Result<DebugStats, String> {
-    Ok(DebugStats {
-        is_enabled: auto_logger.is_enabled(),
-        is_idle: auto_logger.is_idle(),
-        time_since_last_capture: auto_logger.time_since_last_capture(),
-        screenshots_in_buffer: auto_logger.buffer_size(),
-        last_change_score: auto_logger.last_change_score(),
-        total_captures_today: auto_logger.total_captures_today(),
-        total_analyses_today: auto_logger.total_analyses_today(),
-        last_analysis_time: auto_logger.last_analysis_time(),
-    })
-}
-
-#[tauri::command]
-async fn trigger_manual_analysis(
-    app: tauri::AppHandle,
-    auto_logger: tauri::State<'_, auto_logger::AutoLoggerService>
-) -> Result<String, String> {
-    auto_logger.trigger_manual_analysis(app)?;
-    Ok("Analysis triggered".to_string())
-}
-
-#[tauri::command]
-fn clear_screenshot_buffer(
-    auto_logger: tauri::State<auto_logger::AutoLoggerService>
-) -> Result<(), String> {
-    auto_logger.clear_buffer();
-    Ok(())
-}
-
-#[tauri::command]
-async fn get_auto_capture_settings(app: tauri::AppHandle) -> Result<(u64, u64), String> {
-    // Get the database path
-    let db_path = app.path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("worktape.db");
-
-    let db_url = format!("sqlite:{}", db_path.display());
-
-    // Connect to database
-    let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
-        .await
-        .map_err(|e| format!("Failed to connect to database: {}", e))?;
-
-    // Get screenshots per hour
-    let screenshots_result = sqlx::query_as::<_, (String,)>(
-        "SELECT value FROM settings WHERE key = 'screenshots_per_hour'"
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| format!("Failed to query screenshots_per_hour: {}", e))?;
-
-    let screenshots_per_hour = screenshots_result
-        .and_then(|(val,)| val.parse::<u64>().ok())
-        .unwrap_or(360); // Default: 360 per hour = every 10 seconds
-
-    // Get API requests per day
-    let api_result = sqlx::query_as::<_, (String,)>(
-        "SELECT value FROM settings WHERE key = 'api_requests_per_day'"
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(|e| format!("Failed to query api_requests_per_day: {}", e))?;
-
-    let api_requests_per_day = api_result
-        .and_then(|(val,)| val.parse::<u64>().ok())
-        .unwrap_or(96); // Default: 96 per day = every 15 minutes
-
-    pool.close().await;
-
-    Ok((screenshots_per_hour, api_requests_per_day))
-}
-
-#[tauri::command]
-async fn update_auto_capture_settings(
-    app: tauri::AppHandle,
-    screenshots_per_hour: u64,
-    api_requests_per_day: u64,
-    auto_logger: tauri::State<'_, auto_logger::AutoLoggerService>
-) -> Result<(), String> {
-    // Get the database path
-    let db_path = app.path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("worktape.db");
-
-    let db_url = format!("sqlite:{}", db_path.display());
-
-    // Connect to database
-    let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
-        .await
-        .map_err(|e| format!("Failed to connect to database: {}", e))?;
-
-    // Update screenshots per hour
-    sqlx::query(
-        "INSERT OR REPLACE INTO settings (key, value) VALUES ('screenshots_per_hour', ?1)"
-    )
-    .bind(screenshots_per_hour.to_string())
-    .execute(&pool)
-    .await
-    .map_err(|e| format!("Failed to update screenshots_per_hour: {}", e))?;
-
-    // Update API requests per day
-    sqlx::query(
-        "INSERT OR REPLACE INTO settings (key, value) VALUES ('api_requests_per_day', ?1)"
-    )
-    .bind(api_requests_per_day.to_string())
-    .execute(&pool)
-    .await
-    .map_err(|e| format!("Failed to update api_requests_per_day: {}", e))?;
-
-    pool.close().await;
-
-    // Update the auto logger with new settings
-    auto_logger.update_settings(app.clone(), screenshots_per_hour, api_requests_per_day)?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn get_api_usage_today(app: tauri::AppHandle) -> Result<u64, String> {
-    // Get the database path
-    let db_path = app.path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("worktape.db");
-
-    let db_url = format!("sqlite:{}", db_path.display());
-
-    // Connect to database
-    let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
-        .await
-        .map_err(|e| format!("Failed to connect to database: {}", e))?;
-
-    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
-
-    let result = sqlx::query_as::<_, (i64,)>(
-        "SELECT COUNT(*) FROM api_usage_log WHERE date = ?1"
-    )
-    .bind(&today)
-    .fetch_one(&pool)
-    .await
-    .map_err(|e| format!("Failed to query API usage: {}", e))?;
-
-    pool.close().await;
-
-    Ok(result.0 as u64)
-}
 
 #[derive(serde::Serialize)]
 struct ApiCallLog {
@@ -1394,7 +1143,6 @@ async fn suggest_work_links(app: tauri::AppHandle, task_id: i64) -> Result<Vec<W
 async fn end_day(
     app: tauri::AppHandle,
     date: String,
-    auto_logger: tauri::State<'_, auto_logger::AutoLoggerService>,
 ) -> Result<(), String> {
     let db_path = app.path()
         .app_data_dir()
@@ -1416,8 +1164,6 @@ async fn end_day(
         .map_err(|e| format!("Failed to insert day ending: {}", e))?;
 
     pool.close().await;
-
-    auto_logger.disable();
 
     Ok(())
 }
@@ -1706,19 +1452,6 @@ pub fn run() {
             show_prompt,
             skip_prompt,
             set_prompt_interval,
-            generate_daily_summary,
-            generate_grouped_daily_summary,
-            test_screenshot_capture,
-            capture_and_analyze_screen,
-            start_auto_logging,
-            stop_auto_logging,
-            get_auto_logging_status,
-            get_auto_log_debug_stats,
-            trigger_manual_analysis,
-            clear_screenshot_buffer,
-            get_auto_capture_settings,
-            update_auto_capture_settings,
-            get_api_usage_today,
             get_api_call_logs,
             get_api_call_stats,
             get_debug_mode,
@@ -1762,27 +1495,6 @@ pub fn run() {
 
             // Start periodic prompt timer
             prompt::start_prompt_timer(app.handle().clone());
-
-            // Initialize and start auto logger service
-            log::info!("Initializing AutoLoggerService...");
-            let auto_logger = auto_logger::AutoLoggerService::new();
-
-            // Load settings from database
-            let app_clone = app.handle().clone();
-            let auto_logger_clone = auto_logger.clone();
-            async_runtime::spawn(async move {
-                if let Ok((screenshots, api_requests)) = get_auto_capture_settings(app_clone.clone()).await {
-                    let _ = auto_logger_clone.update_settings(app_clone, screenshots, api_requests);
-                }
-            });
-
-            log::info!("Starting background capture/analysis loops...");
-            auto_logger.start(app.handle().clone());
-            log::info!("AutoLoggerService started");
-
-            // Store in app state for control
-            app.manage(auto_logger);
-            log::info!("AutoLoggerService registered in app state");
 
             Ok(())
         })

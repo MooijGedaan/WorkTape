@@ -3,7 +3,6 @@
   "navigation": {
     "home": "Home",
     "workLog": "Werklogboek",
-    "aiSummary": "AI Samenvatting",
     "export": "Exporteren",
     "settings": "Instellingen",
     "help": "Help",
@@ -50,7 +49,7 @@
     "ending": "Afsluiten…",
     "ended": "Dag afgesloten",
     "confirmTitle": "Werklog van vandaag afsluiten?",
-    "confirmDescription": "Hierna kunnen geen nieuwe items meer worden toegevoegd. Je kunt een AI-samenvatting genereren zodra de dag is afgesloten.",
+    "confirmDescription": "Hierna kunnen geen nieuwe items meer worden toegevoegd.",
     "helpComingSoon": "Help & Ondersteuning komt binnenkort!"
   },
   "errors": {
