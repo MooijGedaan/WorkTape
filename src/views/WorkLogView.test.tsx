@@ -103,12 +103,13 @@ describe("WorkLogView", () => {
 
   it("shows error message when DB load fails", async () => {
     const { default: Database } = await import("@tauri-apps/plugin-sql");
-    (Database.load as Mock).mockRejectedValueOnce(new Error("DB unavailable"));
+    const db = await (Database.load as Mock)();
+    (db.select as Mock).mockRejectedValueOnce(new Error("DB unavailable"));
 
     render(<WorkLogView />);
 
     await waitFor(() => {
-      expect(screen.getByText("common:status.error")).toBeInTheDocument();
+      expect(screen.getByText("worklog:errors.loadFailed")).toBeInTheDocument();
     });
   });
 
@@ -191,7 +192,7 @@ describe("WorkLogView", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Auto-detected work")).toBeInTheDocument();
-      expect(screen.getByText("Auto")).toBeInTheDocument();
+      expect(screen.getByText("worklog:autobadge")).toBeInTheDocument();
     });
   });
 

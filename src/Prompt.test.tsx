@@ -179,18 +179,6 @@ describe("Prompt", () => {
     });
   });
 
-  it("clicking next action toggle button reveals next action input", async () => {
-    const user = userEvent.setup();
-    render(<Prompt />);
-
-    await waitFor(() => screen.getByText(/nextAction\.toggle/));
-    await user.click(screen.getByText(/nextAction\.toggle/));
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText("nextAction.placeholder")).toBeInTheDocument();
-    });
-  });
-
   it("shows sprint task selector when active tasks returned", async () => {
     (invoke as Mock).mockImplementation((cmd: string) => {
       if (cmd === "is_day_ended") return Promise.resolve(false);

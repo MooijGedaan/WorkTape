@@ -34,6 +34,11 @@ vi.mock("../hooks/useTheme", () => ({
   useTheme: () => ({ theme: "system", setTheme: vi.fn() }),
 }));
 
+// Mock useNavigation (SettingsView uses showOnboarding)
+vi.mock("../hooks/useNavigation", () => ({
+  useNavigation: () => ({ showOnboarding: vi.fn() }),
+}));
+
 import { invoke } from "@tauri-apps/api/core";
 
 describe("SettingsView", () => {
@@ -81,7 +86,7 @@ describe("SettingsView", () => {
     render(<SettingsView />);
 
     await waitFor(() => {
-      expect(screen.getByText("Automatic Work Logging")).toBeInTheDocument();
+      expect(screen.getByText("settings:autoLogging.title")).toBeInTheDocument();
     });
   });
 
@@ -116,12 +121,12 @@ describe("SettingsView", () => {
     const user = userEvent.setup();
     render(<SettingsView />);
 
-    await waitFor(() => screen.getByText("Automatic Work Logging"));
+    await waitFor(() => screen.getByText("settings:autoLogging.title"));
 
     // The switch for auto-logging — find it by role
     const switches = screen.getAllByRole("switch");
-    // First switch is the auto-logging toggle
-    await user.click(switches[0]);
+    // Second switch is the auto-logging toggle (first is Launch on Startup)
+    await user.click(switches[1]);
 
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("start_auto_logging");

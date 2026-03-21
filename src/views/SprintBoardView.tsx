@@ -310,7 +310,7 @@ function TaskDetailDialog({
   const loadHistory = async (taskId: number) => {
     try {
       const h = await invoke<NextActionHistoryEntry[]>('get_next_action_history', { taskId });
-      setHistory(h);
+      setHistory(h ?? []);
     } catch {
       // ignore
     }

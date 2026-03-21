@@ -3,6 +3,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CalendarView } from "./CalendarView";
 
+// Mock motion/react to avoid IntersectionObserver/viewport issues in jsdom
+vi.mock("motion/react", () => ({
+  motion: {
+    div: ({ children, ...rest }: React.HTMLAttributes<HTMLDivElement>) => <div {...rest}>{children}</div>,
+  },
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 // Mock react-i18next
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -60,8 +68,8 @@ describe("CalendarView", () => {
       expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
     });
 
-    // Days with no entries show "No work entries for this day"
-    const emptyDays = screen.getAllByText("No work entries for this day.");
+    // Days with no entries show the noEntries translation key
+    const emptyDays = screen.getAllByText("noEntries");
     expect(emptyDays.length).toBeGreaterThan(0);
   });
 
@@ -81,7 +89,7 @@ describe("CalendarView", () => {
     render(<CalendarView />);
 
     await waitFor(() => {
-      expect(screen.getByText("3 entries")).toBeInTheDocument();
+      expect(screen.getByText("entryCount")).toBeInTheDocument();
     });
   });
 
@@ -100,7 +108,7 @@ describe("CalendarView", () => {
     render(<CalendarView />);
 
     await waitFor(() => {
-      expect(screen.getByText(/generate ai summary/i)).toBeInTheDocument();
+      expect(screen.getByText("generateSummary")).toBeInTheDocument();
     });
   });
 
@@ -145,12 +153,12 @@ describe("CalendarView", () => {
     const user = userEvent.setup();
     render(<CalendarView />);
 
-    await waitFor(() => screen.getByText(/generate ai summary/i));
+    await waitFor(() => screen.getByText("generateSummary"));
 
-    await user.click(screen.getByText(/generate ai summary/i));
+    await user.click(screen.getByText("generateSummary"));
 
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("generate_daily_summary", expect.objectContaining({ date: dateStr }));
+      expect(invoke).toHaveBeenCalledWith("generate_grouped_daily_summary", expect.objectContaining({ date: dateStr }));
     });
   });
 });
