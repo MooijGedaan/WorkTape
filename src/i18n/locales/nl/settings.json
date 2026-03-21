@@ -1,7 +1,7 @@
 {
   "onboarding": {
     "title": "Welkomstgids",
-    "description": "Open de welkomstgids opnieuw om een overzicht van WorkRecall's functies te zien.",
+    "description": "Open de welkomstgids opnieuw om een overzicht van WorkTape's functies te zien.",
     "showButton": "Welkomstgids tonen"
   },
   "developer": {
@@ -11,8 +11,8 @@
   "onboardingModal": {
     "stepOf": "Stap {{step}} van {{total}}",
     "steps": {
-      "prompts":     { "title": "Periodieke werkprompts",        "description": "WorkRecall herinnert u op regelmatige intervallen om te loggen waar u aan werkt. Stel uw gewenste frequentie in — elke 30 minuten is een goed startpunt." },
-      "autoCapture": { "title": "Automatische werkregistratie",  "description": "Schakel AI-gestuurde automatische registratie in: WorkRecall maakt periodieke schermafbeeldingen, analyseert ze met AI en maakt werklogboekitems — allemaal zonder handmatige invoer." },
+      "prompts":     { "title": "Periodieke werkprompts",        "description": "WorkTape herinnert u op regelmatige intervallen om te loggen waar u aan werkt. Stel uw gewenste frequentie in — elke 30 minuten is een goed startpunt." },
+      "autoCapture": { "title": "Automatische werkregistratie",  "description": "Schakel AI-gestuurde automatische registratie in: WorkTape maakt periodieke schermafbeeldingen, analyseert ze met AI en maakt werklogboekitems — allemaal zonder handmatige invoer." },
       "aiSummary":   { "title": "AI-gestuurde samenvattingen",   "description": "Genereer narratieve samenvattingen van uw werkdag of -week met één klik. Perfect voor standups, prestatiebeoordelingen en sprint-retrospectives." },
       "sprintBoard": { "title": "Sprintbord",                    "description": "Beheer uw taken op een visueel Kanbanbord. Koppel werklogboekitems aan taken om automatisch bij te houden hoeveel tijd u aan elke taak besteedde." },
       "export":      { "title": "Gegevens exporteren",           "description": "Exporteer uw werklogboekitems als CSV of JSON. Gebruik uw gegevens voor loopbaanadvocacy, freelance facturering of rapportage." }
@@ -21,17 +21,17 @@
     "dontShowAgain": "Dit niet meer tonen"
   },
   "title": "Instellingen",
-  "subtitle": "Beheer uw WorkRecall voorkeuren en accountinstellingen.",
+  "subtitle": "Beheer uw WorkTape voorkeuren en accountinstellingen.",
   "promptFrequency": {
     "label": "Promptfrequentie",
-    "description": "Hoe vaak (in minuten) moet WorkRecall u vragen om uw werk te loggen?",
+    "description": "Hoe vaak (in minuten) moet WorkTape u vragen om uw werk te loggen?",
     "recommendation": "Aanbevolen: 30-60 minuten. Bereik: 1-1440 minuten (24 uur).",
     "validationError": "Voer een waarde in tussen 1 en 1440 minuten (24 uur)",
     "saveSuccess": "Instellingen succesvol opgeslagen!"
   },
   "launchOnStartup": {
     "title": "Starten bij opstarten",
-    "description": "Start WorkRecall automatisch wanneer u inlogt.",
+    "description": "Start WorkTape automatisch wanneer u inlogt.",
     "enabled": "Ingeschakeld",
     "disabled": "Uitgeschakeld"
   },

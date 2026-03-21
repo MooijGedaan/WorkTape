@@ -1,6 +1,6 @@
 # Testing Setup
 
-This directory contains the testing infrastructure for WorkRecall's frontend.
+This directory contains the testing infrastructure for WorkTape's frontend.
 
 ## Running Tests
 

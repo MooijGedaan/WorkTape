@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Quick debug tool to view API logs from WorkRecall database
+ * Quick debug tool to view API logs from WorkTape database
  * Usage: node debug_api_logs.js [options]
  *
  * Options:
@@ -20,7 +20,7 @@ const appDataDir = process.env.APPDATA || (os.platform() === 'darwin'
   ? path.join(os.homedir(), 'Library', 'Application Support')
   : path.join(os.homedir(), '.local', 'share'));
 
-const dbPath = path.join(appDataDir, 'com.workrecall.app', 'workrecall.db');
+const dbPath = path.join(appDataDir, 'com.worktape.app', 'worktape.db');
 
 console.log(`📂 Database location: ${dbPath}\n`);
 

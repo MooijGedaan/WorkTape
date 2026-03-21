@@ -37,7 +37,7 @@ function Prompt() {
   useEffect(() => {
     const loadRecentEntries = async () => {
       try {
-        const db = await Database.load('sqlite:workrecall.db');
+        const db = await Database.load('sqlite:worktape.db');
         const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
         const rows = await db.select<Array<{ description: string; task_id: number | null; task_title: string | null }>>(
@@ -148,7 +148,7 @@ function Prompt() {
 
     try {
       const timestamp = new Date().toISOString();
-      const db = await Database.load('sqlite:workrecall.db');
+      const db = await Database.load('sqlite:worktape.db');
 
       const result = await db.execute(
         'INSERT INTO work_entries (description, timestamp) VALUES ($1, $2)',

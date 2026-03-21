@@ -172,7 +172,7 @@ impl AutoLoggerService {
 
                 // Get database path
                 if let Ok(app_data_dir) = app_handle_for_cleanup.path().app_data_dir() {
-                    let db_path = app_data_dir.join("workrecall.db");
+                    let db_path = app_data_dir.join("worktape.db");
                     let db_url = format!("sqlite:{}", db_path.display());
 
                     // Run cleanup
@@ -265,7 +265,7 @@ async fn check_api_rate_limit(app: &tauri::AppHandle) -> Result<bool, String> {
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
 
@@ -388,7 +388,7 @@ async fn get_todays_work_entries(app: &tauri::AppHandle) -> Result<Vec<(String, 
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
 
@@ -432,7 +432,7 @@ async fn store_work_entry(
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     info!("📂 Database path: {}", db_url);

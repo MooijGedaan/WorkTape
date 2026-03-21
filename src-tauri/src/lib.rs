@@ -183,7 +183,7 @@ async fn get_auto_capture_settings(app: tauri::AppHandle) -> Result<(u64, u64), 
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
 
@@ -232,7 +232,7 @@ async fn update_auto_capture_settings(
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
 
@@ -273,7 +273,7 @@ async fn get_api_usage_today(app: tauri::AppHandle) -> Result<u64, String> {
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
 
@@ -332,7 +332,7 @@ async fn get_api_call_logs(
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
 
@@ -422,7 +422,7 @@ async fn get_api_call_stats(app: tauri::AppHandle) -> Result<ApiCallStats, Strin
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
 
@@ -490,7 +490,7 @@ async fn get_debug_mode(app: tauri::AppHandle) -> Result<bool, String> {
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
@@ -516,7 +516,7 @@ async fn set_debug_mode(app: tauri::AppHandle, enabled: bool) -> Result<(), Stri
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
@@ -540,7 +540,7 @@ async fn get_debug_logs_retention_days(app: tauri::AppHandle) -> Result<i64, Str
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
@@ -566,7 +566,7 @@ async fn set_debug_logs_retention_days(app: tauri::AppHandle, days: i64) -> Resu
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
@@ -590,7 +590,7 @@ async fn cleanup_old_debug_logs(app: tauri::AppHandle) -> Result<u32, String> {
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
@@ -667,7 +667,7 @@ async fn export_work_entries(
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
@@ -805,7 +805,7 @@ async fn get_sprint_tasks(app: tauri::AppHandle) -> Result<Vec<SprintTask>, Stri
     use sqlx::Row;
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -855,7 +855,7 @@ async fn create_sprint_task(
     use sqlx::Row;
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -915,7 +915,7 @@ async fn update_sprint_task(
     use sqlx::Row;
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -1000,7 +1000,7 @@ async fn update_sprint_task(
 async fn delete_sprint_task(app: tauri::AppHandle, id: i64) -> Result<(), String> {
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -1026,7 +1026,7 @@ async fn get_next_action_history(
     use sqlx::Row;
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -1056,7 +1056,7 @@ async fn resolve_next_action(
 ) -> Result<(), String> {
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -1108,7 +1108,7 @@ async fn update_task_labels(
 ) -> Result<(), String> {
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -1137,7 +1137,7 @@ async fn get_task_work_links(app: tauri::AppHandle, task_id: i64) -> Result<Vec<
     use sqlx::Row;
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -1182,7 +1182,7 @@ async fn add_work_link(
 ) -> Result<(), String> {
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -1208,7 +1208,7 @@ async fn add_work_link(
 async fn remove_work_link(app: tauri::AppHandle, link_id: i64) -> Result<(), String> {
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -1230,7 +1230,7 @@ async fn suggest_work_links(app: tauri::AppHandle, task_id: i64) -> Result<Vec<W
 
     let db_path = app.path().app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
     let pool = sqlx::sqlite::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
         .await
         .map_err(|e| format!("DB connect error: {}", e))?;
@@ -1399,7 +1399,7 @@ async fn end_day(
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
@@ -1427,7 +1427,7 @@ async fn unend_day(app: tauri::AppHandle, date: String) -> Result<(), String> {
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
@@ -1455,7 +1455,7 @@ async fn is_day_ended(app: tauri::AppHandle, date: String) -> Result<bool, Strin
     let db_path = app.path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?
-        .join("workrecall.db");
+        .join("worktape.db");
 
     let db_url = format!("sqlite:{}", db_path.display());
     let pool = sqlx::sqlite::SqlitePool::connect(&db_url)
@@ -1697,7 +1697,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_sql::Builder::new()
-                .add_migrations("sqlite:workrecall.db", migrations)
+                .add_migrations("sqlite:worktape.db", migrations)
                 .build()
         )
         .invoke_handler(tauri::generate_handler![

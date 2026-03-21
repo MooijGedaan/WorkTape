@@ -21,10 +21,10 @@
   },
   "home-stats": {
     "title": "Je logreeks",
-    "body": "WorkRecall houdt je dagelijkse logreeks bij. Log elke dag minimaal één item om de reeks gaande te houden."
+    "body": "WorkTape houdt je dagelijkse logreeks bij. Log elke dag minimaal één item om de reeks gaande te houden."
   },
   "settings-auto-capture": {
     "title": "Automatisch vastleggen werkt op de achtergrond",
-    "body": "Schakel Automatische Werkregistratie in om WorkRecall je activiteit stil te laten vastleggen — geen handmatige prompts nodig."
+    "body": "Schakel Automatische Werkregistratie in om WorkTape je activiteit stil te laten vastleggen — geen handmatige prompts nodig."
   }
 }

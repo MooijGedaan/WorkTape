@@ -21,10 +21,10 @@
   },
   "home-stats": {
     "title": "Your logging streak",
-    "body": "WorkRecall tracks your daily logging streak. Log at least one entry each day to keep it going."
+    "body": "WorkTape tracks your daily logging streak. Log at least one entry each day to keep it going."
   },
   "settings-auto-capture": {
     "title": "Auto-capture works in the background",
-    "body": "Enable Automatic Work Logging to let WorkRecall capture your activity silently — no manual prompts needed."
+    "body": "Enable Automatic Work Logging to let WorkTape capture your activity silently — no manual prompts needed."
   }
 }

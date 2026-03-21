@@ -22,7 +22,7 @@ export function TitleBar() {
       {/* Left side - App name (with traffic light padding on macOS) */}
       <div className="flex items-center px-3" data-tauri-drag-region style={isMacOS ? { paddingLeft: '76px' } : undefined}>
         <span className="text-xs font-semibold text-zinc-950 dark:text-white">
-          WorkRecall
+          WorkTape
         </span>
       </div>
 

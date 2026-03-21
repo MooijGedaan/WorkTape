@@ -1,5 +1,5 @@
 -- Quick SQL queries to debug API logs
--- Use with: sqlite3 <path-to-workrecall.db> < query_logs.sql
+-- Use with: sqlite3 <path-to-worktape.db> < query_logs.sql
 
 -- Show most recent 10 API calls
 SELECT

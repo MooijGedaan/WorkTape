@@ -17,7 +17,7 @@
     "dialog:allow-save"
   ],
   "_securityNotes": {
-    "sql:allow-execute": "RISK: overly broad — tauri-plugin-sql v2 does not support per-database scoping in capabilities. All SQL execute calls are validated in Rust command handlers in src-tauri/src/lib.rs, which only operate on workrecall.db. Revisit if tauri-plugin-sql adds per-database scope support.",
+    "sql:allow-execute": "RISK: overly broad — tauri-plugin-sql v2 does not support per-database scoping in capabilities. All SQL execute calls are validated in Rust command handlers in src-tauri/src/lib.rs, which only operate on worktape.db. Revisit if tauri-plugin-sql adds per-database scope support.",
     "sql:allow-select": "RISK: overly broad — same as sql:allow-execute. Mitigation is enforced in Rust command handlers.",
     "dialog:allow-save": "RISK: ideally scoped to the app data directory only. tauri-plugin-dialog v2 does not support directory scoping in capabilities. Export paths are user-chosen via save dialog; no server-side path restriction is enforced."
   }

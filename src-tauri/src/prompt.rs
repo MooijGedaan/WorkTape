@@ -55,7 +55,7 @@ pub fn start_prompt_timer(app: AppHandle) {
 
 fn is_today_ended(app: &AppHandle) -> bool {
     let db_path = match app.path().app_data_dir() {
-        Ok(p) => p.join("workrecall.db"),
+        Ok(p) => p.join("worktape.db"),
         Err(_) => return false,
     };
     let db_url = format!("sqlite:{}", db_path.display());

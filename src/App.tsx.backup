@@ -18,7 +18,7 @@ interface WorkEntry {
 let db: Database | null = null;
 
 async function getDatabase() {
-  return db ?? await Database.load("sqlite:workrecall.db");
+  return db ?? await Database.load("sqlite:worktape.db");
 }
 
 function App() {
@@ -129,7 +129,7 @@ function App() {
 
   return (
     <div className="container">
-      <Heading>WorkRecall</Heading>
+      <Heading>WorkTape</Heading>
 
       {error && (
         <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-900">

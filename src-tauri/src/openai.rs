@@ -255,7 +255,7 @@ pub async fn generate_summary(entries: Vec<(String, String)>, date: &str, langua
 
             // Log failed request
             let _ = log_api_call(
-                "workrecall.db",
+                "worktape.db",
                 &request_timestamp,
                 Some(&response_timestamp),
                 &endpoint,
@@ -291,7 +291,7 @@ pub async fn generate_summary(entries: Vec<(String, String)>, date: &str, langua
 
         // Log failed request
         let _ = log_api_call(
-            "workrecall.db",
+            "worktape.db",
             &request_timestamp,
             Some(&response_timestamp),
             &endpoint,
@@ -320,7 +320,7 @@ pub async fn generate_summary(entries: Vec<(String, String)>, date: &str, langua
 
             // Log parsing error
             let _ = log_api_call(
-                "workrecall.db",
+                "worktape.db",
                 &request_timestamp,
                 Some(&response_timestamp),
                 &endpoint,
@@ -372,7 +372,7 @@ pub async fn generate_summary(entries: Vec<(String, String)>, date: &str, langua
 
     // Log successful request
     let _ = log_api_call(
-        "workrecall.db",
+        "worktape.db",
         &request_timestamp,
         Some(&response_timestamp),
         &endpoint,
@@ -532,7 +532,7 @@ async fn call_openai_single(
             let error_msg = format!("Failed to connect to OpenAI API: {}", e);
             log::error!("❌ API request failed: {}", error_msg);
             let _ = log_api_call(
-                "workrecall.db", &request_timestamp, Some(&response_timestamp),
+                "worktape.db", &request_timestamp, Some(&response_timestamp),
                 endpoint, model, "grouped_summary", &request_json,
                 0.3, max_tokens, None, "error", Some(&error_msg), Some(duration_ms), None, 0,
             ).await;
@@ -564,7 +564,7 @@ async fn call_openai_single(
         .ok_or("No response from OpenAI")?;
 
     let _ = log_api_call(
-        "workrecall.db", &request_timestamp, Some(&response_timestamp),
+        "worktape.db", &request_timestamp, Some(&response_timestamp),
         endpoint, model, "grouped_summary", &request_json,
         0.3, max_tokens, Some(&text), "success", None, Some(duration_ms),
         api_response.usage.as_ref(), 0,
@@ -729,7 +729,7 @@ pub async fn analyze_screenshots(screenshots_base64: Vec<String>) -> Result<Stri
 
             // Log failed request
             let _ = log_api_call(
-                "workrecall.db",
+                "worktape.db",
                 &request_timestamp,
                 Some(&response_timestamp),
                 &endpoint,
@@ -765,7 +765,7 @@ pub async fn analyze_screenshots(screenshots_base64: Vec<String>) -> Result<Stri
 
         // Log failed request
         let _ = log_api_call(
-            "workrecall.db",
+            "worktape.db",
             &request_timestamp,
             Some(&response_timestamp),
             &endpoint,
@@ -794,7 +794,7 @@ pub async fn analyze_screenshots(screenshots_base64: Vec<String>) -> Result<Stri
 
             // Log parsing error
             let _ = log_api_call(
-                "workrecall.db",
+                "worktape.db",
                 &request_timestamp,
                 Some(&response_timestamp),
                 &endpoint,
@@ -847,7 +847,7 @@ pub async fn analyze_screenshots(screenshots_base64: Vec<String>) -> Result<Stri
 
     // Log successful request
     let _ = log_api_call(
-        "workrecall.db",
+        "worktape.db",
         &request_timestamp,
         Some(&response_timestamp),
         &endpoint,
