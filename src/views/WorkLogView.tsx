@@ -35,7 +35,7 @@ function toLocalDateString(d: Date): string {
 }
 
 export function WorkLogView() {
-  const { t, i18n } = useTranslation(['worklog', 'notifications', 'common', 'hints']);
+  const { t } = useTranslation(['worklog', 'notifications', 'common', 'hints']);
   const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const hasShownDataHint = useRef(false);
@@ -294,8 +294,8 @@ export function WorkLogView() {
       {activeHintDef && (
         <TooltipHint
           show={activeHint !== null}
-          title={t(`hints:${activeHint}.title`)}
-          body={t(`hints:${activeHint}.body`)}
+          title={t(`hints:${activeHint as HintId}.title`)}
+          body={t(`hints:${activeHint as HintId}.body`)}
           icon={activeHintDef.icon}
           accentColor={activeHintDef.accentColor}
           onDismiss={handleHintDismiss}

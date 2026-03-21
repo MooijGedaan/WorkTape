@@ -1,4 +1,5 @@
 use device_query::{DeviceQuery, DeviceState};
+use std::panic::AssertUnwindSafe;
 use std::time::{Duration, Instant};
 use log::{info, warn};
 
@@ -12,6 +13,7 @@ pub struct IdleDetector {
 
 impl IdleDetector {
     pub fn new(idle_threshold_minutes: u64) -> Self {
+<<<<<<< Updated upstream
         // DeviceState::new() panics on macOS without Accessibility Permissions.
         // Run it in a background thread so the panic is always catchable,
         // regardless of the ObjC callback context of the calling thread.
@@ -27,6 +29,27 @@ impl IdleDetector {
         let last_mouse_pos = device_state.as_ref()
             .map(|ds| ds.get_mouse().coords)
             .unwrap_or((0, 0));
+=======
+        // DeviceState::new() panics on macOS if Accessibility permissions are not granted.
+        // Catch that panic so the app can still run in degraded mode (no idle detection).
+        let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
+            let ds = DeviceState::new();
+            let pos = ds.get_mouse().coords;
+            (ds, pos)
+        }));
+
+        let (device_state, last_mouse_pos) = match result {
+            Ok((ds, pos)) => (Some(ds), pos),
+            Err(_) => {
+                warn!(
+                    "Failed to initialize DeviceState — Accessibility permissions may not be \
+                     granted. Idle detection is disabled; the auto-logger will assume the \
+                     system is always active."
+                );
+                (None, (0, 0))
+            }
+        };
+>>>>>>> Stashed changes
 
         Self {
             device_state,
@@ -37,44 +60,45 @@ impl IdleDetector {
         }
     }
 
-    /// Check if system is currently idle
+    /// Check if system is currently idle.
+    /// Returns `false` (not idle) when Accessibility permissions are unavailable.
     pub fn is_idle(&mut self) -> bool {
         let ds = match &self.device_state {
             Some(ds) => ds,
+<<<<<<< Updated upstream
             None => return false, // No permissions — assume not idle
         };
 
         // Check keyboard and mouse state
+=======
+            None => return false, // no permissions — assume active
+        };
+
+>>>>>>> Stashed changes
         let keys = ds.get_keys();
         let mouse = ds.get_mouse();
 
-        // Check for any activity
         let mut activity_detected = false;
 
-        // Check if mouse moved
         if mouse.coords != self.last_mouse_pos {
             activity_detected = true;
             self.last_mouse_pos = mouse.coords;
         }
 
-        // Check if any mouse buttons are pressed
         if mouse.button_pressed[0] || mouse.button_pressed[1] || mouse.button_pressed[2] {
             activity_detected = true;
         }
 
-        // Check if keyboard state changed
         let current_keys_count = keys.len();
         if current_keys_count != self.last_keys_count {
             activity_detected = true;
             self.last_keys_count = current_keys_count;
         }
 
-        // If any input detected, reset idle timer
         if activity_detected {
             self.last_activity_time = Instant::now();
             false
         } else {
-            // Check if idle threshold exceeded
             let is_idle = self.last_activity_time.elapsed() > self.idle_threshold;
             if is_idle {
                 let idle_minutes = self.last_activity_time.elapsed().as_secs() / 60;
@@ -109,15 +133,11 @@ mod tests {
 
     #[test]
     fn new_detector_is_not_idle_immediately() {
-        // With a 5-minute threshold, a freshly created detector should not be idle
         let mut detector = IdleDetector::new(5);
-        // Just after creation the elapsed time is near zero, well below threshold
-        // Note: is_idle() also checks input state, so we just check the duration is small
         assert!(
             detector.time_since_activity().as_secs() < 1,
             "A newly created IdleDetector should have near-zero idle time"
         );
-        // Suppress unused warning — is_idle reads device state which is fine in tests
         let _ = detector.is_idle();
     }
 }

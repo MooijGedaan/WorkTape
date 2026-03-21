@@ -66,7 +66,8 @@ const PRIORITY_BADGE: Record<PriorityKey, 'zinc' | 'yellow' | 'red'> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(isoString: string, t: (key: string, opts?: object) => string): string {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function formatRelativeTime(isoString: string, t: (key: any, opts?: any) => string): string {
   const date = new Date(isoString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();

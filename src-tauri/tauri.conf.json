@@ -19,7 +19,9 @@
         "minWidth": 800,
         "minHeight": 600,
         "visible": true,
-        "decorations": false,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
         "resizable": true,
         "center": true,
         "skipTaskbar": false
