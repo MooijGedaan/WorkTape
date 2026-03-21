@@ -65,7 +65,7 @@ export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-          WorkRecall &middot; {t('onboardingModal.stepOf', { step: step + 1, total: STEPS.length })}
+          WorkTape &middot; {t('onboardingModal.stepOf', { step: step + 1, total: STEPS.length })}
         </span>
         <button
           onClick={handleClose}

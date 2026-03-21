@@ -30,7 +30,7 @@ export function ExportView() {
     setSavedPath(null);
     setLoading(format);
     try {
-      const defaultFilename = `workrecall-${startDate}-to-${endDate}.${format}`;
+      const defaultFilename = `worktape-${startDate}-to-${endDate}.${format}`;
       const filePath = await save({
         defaultPath: defaultFilename,
         filters: format === 'csv'

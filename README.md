@@ -1,6 +1,6 @@
-# WorkRecall
+# WorkTape
 
-A desktop application for Windows and macOS built with Tauri (Rust backend) and React + TypeScript (frontend). WorkRecall helps professionals maintain a detailed work activity log through periodic prompts and AI-powered summaries.
+A desktop application for Windows and macOS built with Tauri (Rust backend) and React + TypeScript (frontend). WorkTape helps professionals maintain a detailed work activity log through periodic prompts and AI-powered summaries.
 
 ## Features
 

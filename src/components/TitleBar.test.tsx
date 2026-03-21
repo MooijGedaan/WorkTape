@@ -17,7 +17,7 @@ import { TitleBar } from "./TitleBar";
 describe("TitleBar", () => {
   it("renders the application title", () => {
     render(<TitleBar />);
-    expect(screen.getByText("WorkRecall")).toBeInTheDocument();
+    expect(screen.getByText("WorkTape")).toBeInTheDocument();
   });
 
   it("has window control buttons with proper labels", () => {
