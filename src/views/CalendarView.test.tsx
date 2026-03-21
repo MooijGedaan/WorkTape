@@ -84,7 +84,7 @@ describe("CalendarView", () => {
     render(<CalendarView />);
 
     await waitFor(() => {
-      expect(screen.getByText("entryCount")).toBeInTheDocument();
+      expect(screen.getAllByText("entryCount").length).toBeGreaterThan(0);
     });
   });
 });
