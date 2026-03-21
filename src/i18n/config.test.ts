@@ -27,7 +27,6 @@ describe("i18n configuration", () => {
       "home",
       "export",
       "notifications",
-      "aiSummary",
       "prompt",
       "settings",
     ];

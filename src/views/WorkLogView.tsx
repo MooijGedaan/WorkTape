@@ -24,8 +24,7 @@ interface WorkEntry {
   id: number;
   description: string;
   timestamp: string;
-  source?: 'manual' | 'auto'; // Track whether entry was manual or auto-generated
-  screenshots_count?: number; // For auto entries
+  source?: 'manual' | 'auto'; // Track entry source for deletion routing
   next_action?: string | null;
   linked_task_id?: number | null;
 }
@@ -122,13 +121,8 @@ export function WorkLogView() {
         "SELECT we.id, we.description, we.timestamp, we.next_action, 'manual' as source, wl.task_id as linked_task_id FROM work_entries we LEFT JOIN sprint_task_work_links wl ON wl.entry_source = 'manual' AND wl.entry_id = we.id"
       );
 
-      // Fetch auto-generated entries
-      const autoEntries = await database.select<WorkEntry[]>(
-        "SELECT id, description, timestamp, 'auto' as source, screenshots_count FROM auto_work_entries"
-      );
-
-      // Combine and sort by timestamp (newest first)
-      const allEntries = [...manualEntries, ...autoEntries].sort((a, b) =>
+      // Sort by timestamp (newest first)
+      const allEntries = [...manualEntries].sort((a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
 
@@ -427,11 +421,6 @@ export function WorkLogView() {
                                     </p>
                                   )}
                                 </div>
-                                {entry.source === 'auto' && (
-                                  <span className="inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-700/10 dark:ring-amber-300/10 whitespace-nowrap flex-shrink-0">
-                                    {t('worklog:autobadge')}
-                                  </span>
-                                )}
                               </div>
                             </td>
                             <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-right whitespace-nowrap align-top">

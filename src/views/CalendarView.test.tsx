@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { CalendarView } from "./CalendarView";
 
 // Mock motion/react to avoid IntersectionObserver/viewport issues in jsdom
@@ -32,12 +31,9 @@ vi.mock("@tauri-apps/plugin-sql", () => {
   };
 });
 
-import { invoke } from "@tauri-apps/api/core";
-
 describe("CalendarView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (invoke as Mock).mockResolvedValue("Generated summary text");
   });
 
   async function getDb() {
@@ -82,83 +78,13 @@ describe("CalendarView", () => {
     const dateStr = yesterday.toISOString().split("T")[0];
 
     (db.select as Mock)
-      .mockResolvedValueOnce([]) // summaries
       .mockResolvedValueOnce([{ date: dateStr, cnt: 3 }]) // manual counts
-      .mockResolvedValueOnce([]); // auto counts
+      .mockResolvedValueOnce([]); // day endings
 
     render(<CalendarView />);
 
     await waitFor(() => {
-      expect(screen.getByText("entryCount")).toBeInTheDocument();
-    });
-  });
-
-  it("shows Generate AI summary button for days with entries but no summary", async () => {
-    const db = await getDb();
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const dateStr = yesterday.toISOString().split("T")[0];
-
-    (db.select as Mock)
-      .mockResolvedValueOnce([]) // no summaries
-      .mockResolvedValueOnce([{ date: dateStr, cnt: 2 }])
-      .mockResolvedValueOnce([]);
-
-    render(<CalendarView />);
-
-    await waitFor(() => {
-      expect(screen.getByText("generateSummary")).toBeInTheDocument();
-    });
-  });
-
-  it("shows existing summary text when available", async () => {
-    const db = await getDb();
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const dateStr = yesterday.toISOString().split("T")[0];
-
-    (db.select as Mock)
-      .mockResolvedValueOnce([{ date: dateStr, summary: "Worked on bug fixes and refactoring." }])
-      .mockResolvedValueOnce([{ date: dateStr, cnt: 2 }])
-      .mockResolvedValueOnce([]);
-
-    render(<CalendarView />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Worked on bug fixes and refactoring.")).toBeInTheDocument();
-    });
-  });
-
-  it("calls generate_daily_summary invoke when Generate button is clicked", async () => {
-    const db = await getDb();
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const dateStr = yesterday.toISOString().split("T")[0];
-
-    (db.select as Mock)
-      .mockResolvedValueOnce([]) // no summaries
-      .mockResolvedValueOnce([{ date: dateStr, cnt: 1 }])
-      .mockResolvedValueOnce([])
-      // For handleGenerate fetches:
-      .mockResolvedValueOnce([{ description: "Did some work", timestamp: `${dateStr}T09:00:00Z` }]) // manual entries for date
-      .mockResolvedValueOnce([]) // auto entries for date
-      // For loadData after generate:
-      .mockResolvedValueOnce([{ date: dateStr, summary: "Generated summary text" }])
-      .mockResolvedValueOnce([{ date: dateStr, cnt: 1 }])
-      .mockResolvedValueOnce([]);
-
-    const user = userEvent.setup();
-    render(<CalendarView />);
-
-    await waitFor(() => screen.getByText("generateSummary"));
-
-    await user.click(screen.getByText("generateSummary"));
-
-    await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("generate_grouped_daily_summary", expect.objectContaining({ date: dateStr }));
+      expect(screen.getAllByText("entryCount").length).toBeGreaterThan(0);
     });
   });
 });

@@ -29,8 +29,6 @@ vi.mock("./catalyst/button", () => ({
 
 vi.mock("./icons", () => ({
   ClockIcon: () => <svg data-testid="icon-clock" />,
-  CameraIcon: () => <svg data-testid="icon-camera" />,
-  SparklesIcon: () => <svg data-testid="icon-sparkles" />,
   ViewColumnsIcon: () => <svg data-testid="icon-view-columns" />,
   ArrowDownTrayIcon: () => <svg data-testid="icon-arrow-down" />,
   XMarkIcon: ({ className }: { className?: string }) => <svg data-testid="icon-x" className={className} />,
@@ -69,7 +67,7 @@ describe("OnboardingModal", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("onboardingModal.steps.autoCapture.title")).toBeInTheDocument();
+      expect(screen.getByText("onboardingModal.steps.sprintBoard.title")).toBeInTheDocument();
     });
     expect(screen.getByText("onboardingModal.navigation.back")).toBeInTheDocument();
   });
@@ -79,7 +77,7 @@ describe("OnboardingModal", () => {
     render(<OnboardingModal isOpen={true} onClose={noop} />);
 
     await user.click(screen.getByText("onboardingModal.navigation.next"));
-    await waitFor(() => screen.getByText("onboardingModal.steps.autoCapture.title"));
+    await waitFor(() => screen.getByText("onboardingModal.steps.sprintBoard.title"));
 
     await user.click(screen.getByText("onboardingModal.navigation.back"));
 
@@ -95,15 +93,15 @@ describe("OnboardingModal", () => {
     await user.click(screen.getByRole("button", { name: "Go to step 3" }));
 
     await waitFor(() => {
-      expect(screen.getByText("onboardingModal.steps.aiSummary.title")).toBeInTheDocument();
+      expect(screen.getByText("onboardingModal.steps.export.title")).toBeInTheDocument();
     });
   });
 
-  it("last step (step 5) shows getStarted button instead of Next", async () => {
+  it("last step (step 3) shows getStarted button instead of Next", async () => {
     const user = userEvent.setup();
     render(<OnboardingModal isOpen={true} onClose={noop} />);
 
-    await user.click(screen.getByRole("button", { name: "Go to step 5" }));
+    await user.click(screen.getByRole("button", { name: "Go to step 3" }));
 
     await waitFor(() => {
       expect(screen.getByText("onboardingModal.navigation.getStarted")).toBeInTheDocument();
@@ -118,7 +116,7 @@ describe("OnboardingModal", () => {
     const onClose = vi.fn();
     render(<OnboardingModal isOpen={true} onClose={onClose} />);
 
-    await user.click(screen.getByRole("button", { name: "Go to step 5" }));
+    await user.click(screen.getByRole("button", { name: "Go to step 3" }));
     await waitFor(() => screen.getByText("onboardingModal.navigation.getStarted"));
 
     await user.click(

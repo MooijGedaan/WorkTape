@@ -1,6 +1,6 @@
 import { useState, createContext, useContext, useMemo } from 'react';
 
-export type View = 'home' | 'work-log' | 'ai-summary' | 'calendar' | 'sprint-board' | 'settings' | 'export';
+export type View = 'home' | 'work-log' | 'calendar' | 'sprint-board' | 'settings' | 'export';
 
 interface NavigationContext {
   currentView: View;

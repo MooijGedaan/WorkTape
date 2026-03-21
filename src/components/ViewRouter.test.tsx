@@ -20,13 +20,6 @@ vi.mock("../views/ExportView", () => ({
   ExportView: () => <div>Export View</div>,
 }));
 
-vi.mock("../views/AISummaryView", () => ({
-  AISummaryView: () => <div>AI Summary View</div>,
-}));
-
-vi.mock("../views/ScreenCaptureTestView", () => ({
-  ScreenCaptureTestView: () => <div>Screen Capture Test View</div>,
-}));
 
 describe("ViewRouter", () => {
   it("renders work-log view by default", () => {

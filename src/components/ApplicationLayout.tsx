@@ -22,7 +22,6 @@ import {
   DocumentIcon,
   CogIcon,
   ArrowDownTrayIcon,
-  SparklesIcon,
   QuestionMarkCircleIcon,
   CalendarDaysIcon,
   ViewColumnsIcon,
@@ -102,14 +101,6 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               >
                 <DocumentIcon />
                 <SidebarLabel>{t('navigation.workLog')}</SidebarLabel>
-              </SidebarItem>
-
-              <SidebarItem
-                onClick={(e) => { e.preventDefault(); navigate('ai-summary'); }}
-                current={currentView === 'ai-summary'}
-              >
-                <SparklesIcon />
-                <SidebarLabel>{t('navigation.aiSummary')}</SidebarLabel>
               </SidebarItem>
 
               <SidebarItem

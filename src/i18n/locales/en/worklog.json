@@ -25,6 +25,5 @@
   },
   "dayClosed": "Today's log is closed. No more entries can be added.",
   "linkToTask": "Link to task:",
-  "noTask": "No task",
-  "autobadge": "Auto"
+  "noTask": "No task"
 }

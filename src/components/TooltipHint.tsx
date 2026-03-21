@@ -7,14 +7,13 @@ import {
   Squares2X2Icon,
   CalendarDaysIcon,
   ChartBarIcon,
-  CameraIcon,
 } from '@heroicons/react/20/solid';
 
 export interface TooltipHintProps {
   show: boolean;
   title: string;
   body: string;
-  icon?: 'cursor' | 'link' | 'sparkles' | 'drag' | 'calendar' | 'chart' | 'camera';
+  icon?: 'cursor' | 'link' | 'sparkles' | 'drag' | 'calendar' | 'chart';
   accentColor?: string;
   onDismiss: () => void;
   onDisableAll: () => void;
@@ -33,8 +32,6 @@ function HintIcon({ icon, className }: { icon: TooltipHintProps['icon']; classNa
       return <CalendarDaysIcon className={className} />;
     case 'chart':
       return <ChartBarIcon className={className} />;
-    case 'camera':
-      return <CameraIcon className={className} />;
     case 'cursor':
     default:
       return <CursorArrowRaysIcon className={className} />;

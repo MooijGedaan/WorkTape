@@ -12,8 +12,6 @@
     "stepOf": "Stap {{step}} van {{total}}",
     "steps": {
       "prompts":     { "title": "Periodieke werkprompts",        "description": "WorkTape herinnert u op regelmatige intervallen om te loggen waar u aan werkt. Stel uw gewenste frequentie in — elke 30 minuten is een goed startpunt." },
-      "autoCapture": { "title": "Automatische werkregistratie",  "description": "Schakel AI-gestuurde automatische registratie in: WorkTape maakt periodieke schermafbeeldingen, analyseert ze met AI en maakt werklogboekitems — allemaal zonder handmatige invoer." },
-      "aiSummary":   { "title": "AI-gestuurde samenvattingen",   "description": "Genereer narratieve samenvattingen van uw werkdag of -week met één klik. Perfect voor standups, prestatiebeoordelingen en sprint-retrospectives." },
       "sprintBoard": { "title": "Sprintbord",                    "description": "Beheer uw taken op een visueel Kanbanbord. Koppel werklogboekitems aan taken om automatisch bij te houden hoeveel tijd u aan elke taak besteedde." },
       "export":      { "title": "Gegevens exporteren",           "description": "Exporteer uw werklogboekitems als CSV of JSON. Gebruik uw gegevens voor loopbaanadvocacy, freelance facturering of rapportage." }
     },
@@ -44,30 +42,6 @@
         "dark": "Donker",
         "system": "Systeem"
       }
-    }
-  },
-  "autoLogging": {
-    "title": "Automatische werkregistratie",
-    "description": "Automatisch uw werkactiviteit vastleggen en analyseren met AI.",
-    "enabled": "Ingeschakeld",
-    "disabled": "Uitgeschakeld",
-    "screenshotsPerHour": "Schermafbeeldingen per uur",
-    "screenshotsDescription": "Hoe vaak per uur schermafbeeldingen worden gemaakt (wanneer het scherm verandert). Hogere waarden = gedetailleerdere registratie, maar meer opslag nodig.",
-    "everySeconds": "Elke {{seconds}} seconden",
-    "aiAnalysesPerDay": "AI-analyses per dag",
-    "aiAnalysesDescription": "Hoe vaak per dag AI-analyse wordt uitgevoerd op vastgelegde schermafbeeldingen. Elke analyse verbruikt één OpenAI API-verzoek en maakt een werklogboekitem.",
-    "everyMinutes": "Elke {{minutes}} minuten",
-    "apiUsageToday": "API-gebruik vandaag: {{used}} / {{limit}}",
-    "saveCaptureSettings": "Vastleg-instellingen opslaan",
-    "screenshotsValidation": "Schermafbeeldingen per uur moet tussen 1 en 3600 zijn",
-    "apiRequestsValidation": "API-verzoeken per dag moet tussen 1 en 1440 zijn",
-    "saveSuccess": "Automatische vastleg-instellingen succesvol opgeslagen!",
-    "howItWorks": "Hoe het werkt:",
-    "howItWorksItems": {
-      "screenshots": "Schermafbeeldingen worden gemaakt op uw ingestelde frequentie (alleen wanneer het scherm verandert)",
-      "aiAnalysis": "AI analyseert op uw ingestelde interval en maakt werklogboekitems",
-      "privacy": "Schermafbeeldingen worden na analyse verwijderd (privacy-first)",
-      "idle": "Pauzeert automatisch wanneer de computer inactief is (5+ minuten)"
     }
   },
   "featureTips": {

@@ -5,8 +5,6 @@ import { Dialog } from './catalyst/dialog';
 import { Button } from './catalyst/button';
 import {
   ClockIcon,
-  CameraIcon,
-  SparklesIcon,
   ViewColumnsIcon,
   ArrowDownTrayIcon,
   XMarkIcon,
@@ -19,8 +17,6 @@ interface OnboardingModalProps {
 
 const STEPS = [
   { key: 'prompts',     Icon: ClockIcon,          color: 'bg-blue-100 dark:bg-blue-900/40',   iconColor: 'text-blue-600 dark:text-blue-400' },
-  { key: 'autoCapture', Icon: CameraIcon,         color: 'bg-violet-100 dark:bg-violet-900/40', iconColor: 'text-violet-600 dark:text-violet-400' },
-  { key: 'aiSummary',   Icon: SparklesIcon,       color: 'bg-amber-100 dark:bg-amber-900/40', iconColor: 'text-amber-600 dark:text-amber-400' },
   { key: 'sprintBoard', Icon: ViewColumnsIcon,    color: 'bg-teal-100 dark:bg-teal-900/40',   iconColor: 'text-teal-600 dark:text-teal-400' },
   { key: 'export',      Icon: ArrowDownTrayIcon,  color: 'bg-green-100 dark:bg-green-900/40', iconColor: 'text-green-600 dark:text-green-400' },
 ] as const;

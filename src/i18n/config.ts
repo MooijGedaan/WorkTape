@@ -8,7 +8,6 @@ import worklogEN from './locales/en/worklog.json';
 import homeEN from './locales/en/home.json';
 import exportEN from './locales/en/export.json';
 import notificationsEN from './locales/en/notifications.json';
-import aiSummaryEN from './locales/en/aiSummary.json';
 import promptEN from './locales/en/prompt.json';
 import settingsEN from './locales/en/settings.json';
 import sprintboardEN from './locales/en/sprintboard.json';
@@ -20,7 +19,6 @@ import worklogNL from './locales/nl/worklog.json';
 import homeNL from './locales/nl/home.json';
 import exportNL from './locales/nl/export.json';
 import notificationsNL from './locales/nl/notifications.json';
-import aiSummaryNL from './locales/nl/aiSummary.json';
 import promptNL from './locales/nl/prompt.json';
 import settingsNL from './locales/nl/settings.json';
 import sprintboardNL from './locales/nl/sprintboard.json';
@@ -35,7 +33,6 @@ export const resources = {
     home: homeEN,
     export: exportEN,
     notifications: notificationsEN,
-    aiSummary: aiSummaryEN,
     prompt: promptEN,
     settings: settingsEN,
     sprintboard: sprintboardEN,
@@ -48,7 +45,6 @@ export const resources = {
     home: homeNL,
     export: exportNL,
     notifications: notificationsNL,
-    aiSummary: aiSummaryNL,
     prompt: promptNL,
     settings: settingsNL,
     sprintboard: sprintboardNL,
@@ -64,7 +60,7 @@ i18n
     resources,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'worklog', 'home', 'export', 'notifications', 'aiSummary', 'prompt', 'settings', 'sprintboard', 'calendar', 'hints'],
+    ns: ['common', 'worklog', 'home', 'export', 'notifications', 'prompt', 'settings', 'sprintboard', 'calendar', 'hints'],
 
     detection: {
       order: ['localStorage', 'navigator'],

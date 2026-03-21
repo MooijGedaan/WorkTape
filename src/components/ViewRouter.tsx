@@ -4,7 +4,6 @@ import { HomeView } from '../views/HomeView';
 import { WorkLogView } from '../views/WorkLogView';
 import { SettingsView } from '../views/SettingsView';
 import { ExportView } from '../views/ExportView';
-import { AISummaryView } from '../views/AISummaryView';
 import { CalendarView } from '../views/CalendarView';
 import { SprintBoardView } from '../views/SprintBoardView';
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,7 +14,6 @@ export function ViewRouter() {
   const views = {
     'home': <HomeView />,
     'work-log': <WorkLogView />,
-    'ai-summary': <AISummaryView />,
     'calendar': <CalendarView />,
     'sprint-board': <SprintBoardView />,
     'settings': <SettingsView />,
