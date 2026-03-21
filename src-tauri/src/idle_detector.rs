@@ -13,23 +13,6 @@ pub struct IdleDetector {
 
 impl IdleDetector {
     pub fn new(idle_threshold_minutes: u64) -> Self {
-<<<<<<< Updated upstream
-        // DeviceState::new() panics on macOS without Accessibility Permissions.
-        // Run it in a background thread so the panic is always catchable,
-        // regardless of the ObjC callback context of the calling thread.
-        let device_state = std::thread::spawn(|| {
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| DeviceState::new())).ok()
-        }).join().unwrap_or(None);
-
-        if device_state.is_none() {
-            warn!("⚠️  Accessibility Permissions not granted — idle detection disabled.");
-            warn!("   To enable: System Settings > Privacy & Security > Accessibility, then add this app.");
-        }
-
-        let last_mouse_pos = device_state.as_ref()
-            .map(|ds| ds.get_mouse().coords)
-            .unwrap_or((0, 0));
-=======
         // DeviceState::new() panics on macOS if Accessibility permissions are not granted.
         // Catch that panic so the app can still run in degraded mode (no idle detection).
         let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
@@ -49,7 +32,6 @@ impl IdleDetector {
                 (None, (0, 0))
             }
         };
->>>>>>> Stashed changes
 
         Self {
             device_state,
@@ -65,16 +47,9 @@ impl IdleDetector {
     pub fn is_idle(&mut self) -> bool {
         let ds = match &self.device_state {
             Some(ds) => ds,
-<<<<<<< Updated upstream
-            None => return false, // No permissions — assume not idle
-        };
-
-        // Check keyboard and mouse state
-=======
             None => return false, // no permissions — assume active
         };
 
->>>>>>> Stashed changes
         let keys = ds.get_keys();
         let mouse = ds.get_mouse();
 
