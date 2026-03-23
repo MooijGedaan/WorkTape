@@ -5,6 +5,84 @@ use tauri_plugin_autostart::MacosLauncher;
 mod openai;
 mod prompt;
 
+/// Read the device token from settings, or register a new device if none exists.
+async fn ensure_device_token(pool: &sqlx::SqlitePool) -> Result<String, String> {
+    let existing = sqlx::query_as::<_, (String,)>(
+        "SELECT value FROM settings WHERE key = 'device_token'"
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("DB error: {}", e))?;
+
+    if let Some((token,)) = existing {
+        if !token.is_empty() {
+            return Ok(token);
+        }
+    }
+
+    register_device(pool).await
+}
+
+/// Generate a device UUID, call the worker /register endpoint, and store the returned token.
+async fn register_device(pool: &sqlx::SqlitePool) -> Result<String, String> {
+    // Get or generate device_id
+    let device_id = match sqlx::query_as::<_, (String,)>(
+        "SELECT value FROM settings WHERE key = 'device_id'"
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("DB error: {}", e))?
+    {
+        Some((id,)) if !id.is_empty() => id,
+        _ => {
+            let id = uuid::Uuid::new_v4().to_string();
+            sqlx::query(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('device_id', ?)"
+            )
+            .bind(&id)
+            .execute(pool)
+            .await
+            .map_err(|e| format!("Failed to store device_id: {}", e))?;
+            id
+        }
+    };
+
+    // Call the worker /register endpoint
+    let client = reqwest::Client::new();
+    let register_url = format!("{}/register", openai::PROXY_URL);
+    let resp = client
+        .post(&register_url)
+        .json(&serde_json::json!({ "device_id": device_id }))
+        .send()
+        .await
+        .map_err(|e| format!("Registration request failed: {}", e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("Registration failed ({}): {}", status, body));
+    }
+
+    #[derive(serde::Deserialize)]
+    struct RegisterResponse {
+        token: String,
+    }
+
+    let reg: RegisterResponse = resp.json().await
+        .map_err(|e| format!("Failed to parse registration response: {}", e))?;
+
+    // Store the token
+    sqlx::query(
+        "INSERT OR REPLACE INTO settings (key, value) VALUES ('device_token', ?)"
+    )
+    .bind(&reg.token)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Failed to store device_token: {}", e))?;
+
+    Ok(reg.token)
+}
+
 #[tauri::command]
 fn close_prompt_after_save(app: tauri::AppHandle, interval_minutes: u64) -> Result<(), String> {
     // Schedule next prompt for configured interval (passed from frontend)
@@ -1279,7 +1357,26 @@ async fn generate_grouped_daily_summary(
         });
     }
 
-    let (json, new_labels) = openai::generate_grouped_summary(task_groups, &date, &language).await?;
+    // Get or register device token
+    let device_token = ensure_device_token(&pool).await?;
+
+    // Call AI with retry on token revocation
+    let result = openai::generate_grouped_summary(
+        task_groups.clone(), &date, &language, &device_token
+    ).await;
+
+    let (json, new_labels) = match result {
+        Err(ref e) if e == "TOKEN_REVOKED" => {
+            // Clear old token and re-register
+            sqlx::query("DELETE FROM settings WHERE key = 'device_token'")
+                .execute(&pool).await.ok();
+            let new_token = register_device(&pool).await?;
+            openai::generate_grouped_summary(
+                task_groups, &date, &language, &new_token
+            ).await?
+        }
+        other => other?,
+    };
 
     // Persist newly generated labels so future summaries reuse them
     for nl in new_labels {
@@ -1300,9 +1397,6 @@ async fn generate_grouped_daily_summary(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Load environment variables from .env file
-    dotenv::dotenv().ok();
-
     // Define database migrations
     let migrations = vec![
         Migration {

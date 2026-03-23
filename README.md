@@ -12,7 +12,7 @@ A desktop application for Windows and macOS built with Tauri (Rust backend) and 
 - **Persistent Storage**: All entries are stored locally in a SQLite database
 
 ### AI-Powered Summaries
-- **Daily Summaries**: Generate professional narrative summaries of your work for any day using OpenAI GPT-4o-mini
+- **Daily Summaries**: Generate professional narrative summaries of your work for any day using AI
 - **Date Selection**: Choose any date to summarize using an intuitive date picker or quick "Today"/"Yesterday" buttons
 - **Persistent Summaries**: Generated summaries are automatically saved to the database and persist across sessions
 - **Smart Validation**: Requires at least 2 work entries before allowing summary generation
@@ -45,7 +45,7 @@ A desktop application for Windows and macOS built with Tauri (Rust backend) and 
   - `ai_summaries` table: Persists AI-generated summaries with creation and update timestamps
   - `settings` table: Application configuration (prompt intervals, etc.)
 - **Database Migrations**: Automatic schema versioning and migration system
-- **Privacy First**: All data stored locally on your machine - no cloud sync or external data transmission (except OpenAI API for summaries)
+- **Privacy First**: All data stored locally on your machine - no cloud sync or external data transmission (except AI summary generation via a secure proxy service)
 
 ### System Integration
 - **System Tray Integration**: Runs in the background with system tray access (planned)
@@ -69,17 +69,14 @@ A desktop application for Windows and macOS built with Tauri (Rust backend) and 
    npm install
    ```
 
-3. **Configure OpenAI API** (for AI Summary feature):
+3. **Configure the AI proxy** (for AI Summary feature):
    - Copy `.env.example` to `.env`:
      ```bash
      cp .env.example .env
      ```
-   - Get your OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
-   - Edit `.env` and replace `sk-your-api-key-here` with your actual API key:
+   - Edit `.env` and set your app token:
      ```
-     OPENAI_API_KEY=sk-proj-...your-actual-key...
-     OPENAI_MODEL=gpt-4o-mini
-     OPENAI_API_URL=https://api.openai.com/v1
+     WORKTAPE_APP_TOKEN=your-app-token-here
      ```
    - **Important**: Never commit your `.env` file to git (it's already in `.gitignore`)
 
@@ -106,4 +103,4 @@ npm run tauri build
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS
 - **Backend**: Tauri v2, Rust
 - **Database**: SQLite (via tauri-plugin-sql)
-- **AI**: OpenAI API (GPT-4o-mini)
+- **AI**: GPT-4o-mini (via proxy service)
