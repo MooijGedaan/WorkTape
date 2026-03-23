@@ -191,6 +191,7 @@ pub async fn generate_grouped_summary(
 
     let client = reqwest::Client::new();
     let endpoint = format!("{}/chat/completions", PROXY_URL);
+    let endpoint = format!("{}/chat/completions", PROXY_URL);
     let mut items: Vec<SummaryItem> = Vec::new();
     let mut new_labels: Vec<NewTaskLabel> = Vec::new();
 
@@ -271,6 +272,7 @@ pub async fn generate_grouped_summary(
 }
 
 /// Make a single chat completion call via the proxy and return the trimmed text response.
+/// Make a single chat completion call via the proxy and return the trimmed text response.
 async fn call_openai_single(
     client: &reqwest::Client,
     endpoint: &str,
@@ -317,6 +319,7 @@ async fn call_openai_single(
         Ok(r) => r,
         Err(e) => {
             let error_msg = format!("Failed to connect to summary service: {}", e);
+            let error_msg = format!("Failed to connect to summary service: {}", e);
             log::error!("❌ API request failed: {}", error_msg);
             let _ = log_api_call(
                 "worktape.db", &request_timestamp, Some(&response_timestamp),
@@ -334,11 +337,13 @@ async fn call_openai_single(
             401 => return Err("TOKEN_REVOKED".to_string()),
             429 => "Rate limit exceeded. Please try again in a moment.".to_string(),
             _ => format!("Summary service error ({}): {}", status, error_text),
+            _ => format!("Summary service error ({}): {}", status, error_text),
         };
         return Err(error_msg);
     }
 
     let api_response: OpenAIResponse = response.json().await
+        .map_err(|e| format!("Failed to parse summary response: {}", e))?;
         .map_err(|e| format!("Failed to parse summary response: {}", e))?;
 
     let text = api_response.choices
@@ -348,6 +353,7 @@ async fn call_openai_single(
             MessageContent::Text(t) => Some(t.trim().to_string()),
             _ => None,
         })
+        .ok_or("No response from summary service")?;
         .ok_or("No response from summary service")?;
 
     let _ = log_api_call(
