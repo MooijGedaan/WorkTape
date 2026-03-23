@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { CalendarView } from "./CalendarView";
 
+// Mock useNavigation to avoid requiring NavigationProvider in tests
+vi.mock("../hooks/useNavigation", () => ({
+  useNavigation: () => ({ navigateToTask: vi.fn() }),
+}));
+
 // Mock motion/react to avoid IntersectionObserver/viewport issues in jsdom
 vi.mock("motion/react", () => ({
   motion: {

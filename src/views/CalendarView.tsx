@@ -9,10 +9,12 @@ import { Text } from '../components/catalyst/text';
 import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
 import { TooltipHint } from '../components/TooltipHint';
 import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
+import { useNavigation } from '../hooks/useNavigation';
 
 interface SummaryItem {
   label: string;
   summary: string;
+  task_id?: number;
 }
 
 function parseSummary(raw: string | null): SummaryItem[] | null {
@@ -102,7 +104,7 @@ function formatDayHeader(dateStr: string, locale: string): { dayNum: string; day
   };
 }
 
-function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string) => Promise<void> }) {
+function DayCard({ day, onGenerate, onLabelClick }: { day: DayData; onGenerate: (date: string) => Promise<void>; onLabelClick: (taskId: number) => void }) {
   const { t, i18n } = useTranslation('calendar');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +159,19 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
                 <div key={i} className="contents">
                   <div className="pr-3 pt-0.5">
                     {item.label && (
-                      <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded whitespace-nowrap">{item.label}</span>
+                      item.task_id != null ? (
+                        <button
+                          onClick={() => onLabelClick(item.task_id!)}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded whitespace-nowrap hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                        >
+                          {item.label}
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M3.5 8.5 8.5 3.5M5.5 3.5h3v3" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded whitespace-nowrap">{item.label}</span>
+                      )
                     )}
                   </div>
                   <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{item.summary}</p>
@@ -209,6 +223,7 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
 
 export function CalendarView() {
   const { t, i18n } = useTranslation(['calendar', 'hints']);
+  const { navigateToTask } = useNavigation();
   const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [weeks, setWeeks] = useState<WeekGroup[]>([]);
@@ -356,9 +371,14 @@ export function CalendarView() {
       [date, generatedSummary, date, now, now]
     );
 
-    // Refresh
-    await loadData();
-  }, [loadData, i18n.language, t]);
+    // Update only the affected day in state — no full reload
+    setWeeks(prev => prev.map(week => ({
+      ...week,
+      days: week.days.map(day =>
+        day.date === date ? { ...day, summary: generatedSummary } : day
+      ),
+    })));
+  }, [i18n.language, t]);
 
   const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
 
@@ -404,7 +424,7 @@ export function CalendarView() {
                     key={day.date}
                     variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
                   >
-                    <DayCard day={day} onGenerate={handleGenerate} />
+                    <DayCard day={day} onGenerate={handleGenerate} onLabelClick={navigateToTask} />
                   </motion.div>
                 ))}
               </motion.div>

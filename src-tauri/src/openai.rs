@@ -80,6 +80,8 @@ pub struct TaskGroup {
 pub struct SummaryItem {
     pub label: String,
     pub summary: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub task_id: Option<i64>,
 }
 
 /// Log API call details to the database
@@ -224,6 +226,7 @@ pub async fn generate_grouped_summary(
                     items.push(SummaryItem {
                         label: cached_label.clone(),
                         summary,
+                        task_id: group.task_id,
                     });
                 } else {
                     // No cached label — ask AI for {label, summary} and remember the new label
@@ -235,11 +238,13 @@ pub async fn generate_grouped_summary(
                         system_prompt, user_message, 150, language,
                     ).await?;
 
-                    let parsed: SummaryItem = serde_json::from_str(&raw)
+                    let mut parsed: SummaryItem = serde_json::from_str(&raw)
                         .unwrap_or_else(|_| SummaryItem {
                             label: task_title.clone(),
                             summary: raw,
+                            task_id: None,
                         });
+                    parsed.task_id = group.task_id;
 
                     if let Some(task_id) = group.task_id {
                         new_labels.push(NewTaskLabel { task_id, label: parsed.label.clone() });

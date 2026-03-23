@@ -674,7 +674,7 @@ function BoardColumn({
 
 // ─── SprintBoardView ──────────────────────────────────────────────────────────
 
-export function SprintBoardView() {
+export function SprintBoardView({ initialTaskId, onInitialTaskOpened }: { initialTaskId?: number | null; onInitialTaskOpened?: () => void }) {
   const { t } = useTranslation(['sprintboard', 'hints']);
   const { isSeen, markSeen, isAllDisabled, disableAll } = useTooltipHints();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
@@ -704,6 +704,15 @@ export function SprintBoardView() {
   useEffect(() => {
     loadTasks();
   }, []);
+
+  useEffect(() => {
+    if (initialTaskId == null || loading) return;
+    const task = tasks.find(t => t.id === initialTaskId);
+    if (task) {
+      setSelectedTask(task);
+      onInitialTaskOpened?.();
+    }
+  }, [initialTaskId, tasks, loading]);
 
   useEffect(() => {
     if (isAllDisabled) return;
