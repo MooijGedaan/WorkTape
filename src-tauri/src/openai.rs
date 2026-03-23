@@ -69,6 +69,9 @@ pub(crate) struct WorkEntry {
 #[derive(Debug)]
 pub struct TaskGroup {
     pub task_title: Option<String>,
+    pub task_id: Option<i64>,
+    /// Pre-looked-up canonical label for this task+language; if Some, skip AI label generation.
+    pub cached_label: Option<String>,
     pub entries: Vec<WorkEntry>,
 }
 
@@ -166,13 +169,19 @@ async fn log_api_call(
     Ok(())
 }
 
+/// A generated label paired with the task_id that produced it, for persistence.
+pub struct NewTaskLabel {
+    pub task_id: i64,
+    pub label: String,
+}
+
 /// Generate labeled summary items: one per linked task, AI-clustered groups for unlinked entries.
-/// Returns a JSON string: array of {label, summary}.
+/// Returns (JSON string: array of {label, summary}, new labels to persist).
 pub async fn generate_grouped_summary(
     task_groups: Vec<TaskGroup>,
     date: &str,
     language: &str,
-) -> Result<String, String> {
+) -> Result<(String, Vec<NewTaskLabel>), String> {
     let api_key = env::var("OPENAI_API_KEY")
         .map_err(|_| "OPENAI_API_KEY not set in environment. Please configure your .env file.".to_string())?;
 
@@ -193,6 +202,7 @@ pub async fn generate_grouped_summary(
     let client = reqwest::Client::new();
     let endpoint = format!("{}/chat/completions", api_url);
     let mut items: Vec<SummaryItem> = Vec::new();
+    let mut new_labels: Vec<NewTaskLabel> = Vec::new();
 
     for group in &task_groups {
         if group.entries.is_empty() {
@@ -201,19 +211,42 @@ pub async fn generate_grouped_summary(
 
         match &group.task_title {
             Some(task_title) => {
-                // Linked task: one call → one bullet, label is the task name
-                let system_prompt = build_linked_task_system_prompt(language);
-                let user_message = build_linked_task_user_prompt(task_title, &group.entries, date);
+                if let Some(cached_label) = &group.cached_label {
+                    // Label already known — only ask AI for the summary sentence
+                    let system_prompt = build_linked_task_summary_only_prompt(language);
+                    let user_message = build_linked_task_user_prompt(task_title, &group.entries, date);
 
-                let bullet = call_openai_single(
-                    &client, &endpoint, &model, &api_key,
-                    system_prompt, user_message, 120, language,
-                ).await?;
+                    let summary = call_openai_single(
+                        &client, &endpoint, &model, &api_key,
+                        system_prompt, user_message, 120, language,
+                    ).await?;
 
-                items.push(SummaryItem {
-                    label: task_title.clone(),
-                    summary: bullet,
-                });
+                    items.push(SummaryItem {
+                        label: cached_label.clone(),
+                        summary,
+                    });
+                } else {
+                    // No cached label — ask AI for {label, summary} and remember the new label
+                    let system_prompt = build_linked_task_system_prompt(language);
+                    let user_message = build_linked_task_user_prompt(task_title, &group.entries, date);
+
+                    let raw = call_openai_single(
+                        &client, &endpoint, &model, &api_key,
+                        system_prompt, user_message, 150, language,
+                    ).await?;
+
+                    let parsed: SummaryItem = serde_json::from_str(&raw)
+                        .unwrap_or_else(|_| SummaryItem {
+                            label: task_title.clone(),
+                            summary: raw,
+                        });
+
+                    if let Some(task_id) = group.task_id {
+                        new_labels.push(NewTaskLabel { task_id, label: parsed.label.clone() });
+                    }
+
+                    items.push(parsed);
+                }
             }
             None => {
                 // Unlinked entries: one call → AI clusters them and returns JSON array of {label, summary}
@@ -238,8 +271,10 @@ pub async fn generate_grouped_summary(
         return Err("No summary could be generated.".to_string());
     }
 
-    serde_json::to_string(&items)
-        .map_err(|e| format!("Failed to serialize summary items: {}", e))
+    let json = serde_json::to_string(&items)
+        .map_err(|e| format!("Failed to serialize summary items: {}", e))?;
+
+    Ok((json, new_labels))
 }
 
 /// Make a single OpenAI chat completion call and return the trimmed text response.
@@ -335,6 +370,19 @@ async fn call_openai_single(
 }
 
 fn build_linked_task_system_prompt(language_code: &str) -> String {
+    format!(
+        "You will receive work log entries for a single named task. \
+Return a JSON object with exactly two fields:\
+- \"label\": a very short (2-4 words max) version of the task name, suitable as a quick memory aid. Translate it to the response language.\
+- \"summary\": one concise sentence summarizing what was done. No leading dash or bullet.\
+Return only the JSON object, no other text. Example: \
+{{\"label\":\"Auth refactor\",\"summary\":\"Refactored login flow to use JWT tokens.\"}}\
+{}",
+        language_instruction(language_code)
+    )
+}
+
+fn build_linked_task_summary_only_prompt(language_code: &str) -> String {
     format!(
         "You will receive work log entries for a single named task. \
 Write exactly one concise sentence (no leading dash, no bullet) summarizing what was done. \

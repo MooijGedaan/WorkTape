@@ -179,6 +179,19 @@ export function WorkLogView() {
       setTaskDescription(""); // Clear the input field
       setSelectedTaskId(null); // Clear selected task
       localStorage.removeItem('worklog-draft'); // Clear the saved draft
+
+      // Reset the prompt timer so a new work log entry counts as recent activity
+      try {
+        const intervalResult = await database.select<Array<{ value: string }>>(
+          "SELECT value FROM settings WHERE key = 'prompt_interval_minutes'"
+        );
+        const intervalMinutes = intervalResult.length > 0
+          ? parseInt(intervalResult[0].value, 10)
+          : 30;
+        await invoke('reset_prompt_timer', { intervalMinutes });
+      } catch (timerError) {
+        console.error('Failed to reset prompt timer:', timerError);
+      }
     } catch (err) {
       setError(t('worklog:errors.addFailed', { error: String(err) }));
       console.error("Error adding entry:", err);

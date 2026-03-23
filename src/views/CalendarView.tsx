@@ -176,25 +176,27 @@ function DayCard({ day, onGenerate }: { day: DayData; onGenerate: (date: string)
             )}
           </div>
         ) : (
-          // No summary yet — show entries + generate button (or day-in-progress note)
+          // No summary yet
           <div className="flex flex-col gap-3">
-            <ul className="space-y-1">
-              {day.entries.map((entry, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                  <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500" />
-                  <span>{entry.description}</span>
-                </li>
-              ))}
-            </ul>
-            {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
             {canGenerate ? (
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="self-start text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isGenerating ? t('generating') : t('generateSummary')}
-              </button>
+              <>
+                <ul className="space-y-1">
+                  {day.entries.map((entry, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                      <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500" />
+                      <span>{entry.description}</span>
+                    </li>
+                  ))}
+                </ul>
+                {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  className="self-start text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isGenerating ? t('generating') : t('generateSummary')}
+                </button>
+              </>
             ) : (
               <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('dayInProgress')}</p>
             )}
@@ -327,18 +329,19 @@ export function CalendarView() {
     }
 
     // Group entries by task_id (null = ungrouped)
-    const groupMap = new Map<string, { taskTitle: string | null; entries: [string, string][] }>();
+    const groupMap = new Map<string, { taskTitle: string | null; taskId: number | null; entries: [string, string][] }>();
     for (const entry of allEntries) {
       const key = entry.task_id != null ? String(entry.task_id) : '__ungrouped__';
       if (!groupMap.has(key)) {
-        groupMap.set(key, { taskTitle: entry.task_title ?? null, entries: [] });
+        groupMap.set(key, { taskTitle: entry.task_title ?? null, taskId: entry.task_id ?? null, entries: [] });
       }
       groupMap.get(key)!.entries.push([entry.description, entry.timestamp]);
     }
 
     // Convert to the format expected by generate_grouped_daily_summary
-    const groups: [string | null, [string, string][]][] = Array.from(groupMap.values()).map(
-      (g) => [g.taskTitle, g.entries]
+    // Each tuple: [task_title, task_id, entries]
+    const groups: [string | null, number | null, [string, string][]][] = Array.from(groupMap.values()).map(
+      (g) => [g.taskTitle, g.taskId, g.entries]
     );
 
     const generatedSummary = await invoke<string>('generate_grouped_daily_summary', {

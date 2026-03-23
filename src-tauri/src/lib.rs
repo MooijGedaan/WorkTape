@@ -46,6 +46,13 @@ fn set_prompt_interval(app: tauri::AppHandle, minutes: u64) -> Result<(), String
     Ok(())
 }
 
+#[tauri::command]
+fn reset_prompt_timer(app: tauri::AppHandle, interval_minutes: u64) -> Result<(), String> {
+    // Reset the countdown without closing any window (e.g. after a work log entry)
+    prompt::schedule_next_prompt(app, interval_minutes);
+    Ok(())
+}
+
 
 #[derive(serde::Serialize)]
 struct ApiCallLog {
@@ -1224,22 +1231,71 @@ async fn is_day_ended(app: tauri::AppHandle, date: String) -> Result<bool, Strin
 
 #[tauri::command]
 async fn generate_grouped_daily_summary(
-    // Each group: (optional task_title, vec of (description, timestamp))
-    groups: Vec<(Option<String>, Vec<(String, String)>)>,
+    app: tauri::AppHandle,
+    // Each group: (optional task_title, optional task_id, vec of (description, timestamp))
+    groups: Vec<(Option<String>, Option<i64>, Vec<(String, String)>)>,
     date: String,
     language: String,
 ) -> Result<String, String> {
-    let task_groups: Vec<openai::TaskGroup> = groups
-        .into_iter()
-        .map(|(task_title, entries)| openai::TaskGroup {
+    use sqlx::Row;
+
+    // Open DB to look up cached labels and store new ones
+    let db_path = app.path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+        .join("worktape.db");
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&format!("sqlite:{}", db_path.display()))
+        .await
+        .map_err(|e| format!("Failed to open DB for label cache: {}", e))?;
+
+    let mut task_groups: Vec<openai::TaskGroup> = Vec::new();
+
+    for (task_title, task_id, entries) in groups {
+        let cached_label = if let (Some(tid), true) = (task_id, task_title.is_some()) {
+            let row = sqlx::query(
+                "SELECT label FROM sprint_task_labels_i18n WHERE task_id = ? AND language = ?"
+            )
+            .bind(tid)
+            .bind(&language)
+            .fetch_optional(&pool)
+            .await
+            .map_err(|e| format!("DB error looking up label cache: {}", e))?;
+
+            row.map(|r| r.get::<String, _>("label"))
+        } else {
+            None
+        };
+
+        task_groups.push(openai::TaskGroup {
             task_title,
+            task_id,
+            cached_label,
             entries: entries
                 .into_iter()
                 .map(|(description, timestamp)| openai::WorkEntry { description, timestamp })
                 .collect(),
-        })
-        .collect();
-    openai::generate_grouped_summary(task_groups, &date, &language).await
+        });
+    }
+
+    let (json, new_labels) = openai::generate_grouped_summary(task_groups, &date, &language).await?;
+
+    // Persist newly generated labels so future summaries reuse them
+    for nl in new_labels {
+        sqlx::query(
+            "INSERT OR IGNORE INTO sprint_task_labels_i18n (task_id, language, label) VALUES (?, ?, ?)"
+        )
+        .bind(nl.task_id)
+        .bind(&language)
+        .bind(&nl.label)
+        .execute(&pool)
+        .await
+        .map_err(|e| format!("Failed to store label cache: {}", e))?;
+    }
+
+    pool.close().await;
+    Ok(json)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -1456,6 +1512,17 @@ pub fn run() {
             );",
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 14,
+            description: "create sprint_task_labels_i18n table for canonical AI-generated labels",
+            sql: "CREATE TABLE IF NOT EXISTS sprint_task_labels_i18n (
+                task_id  INTEGER NOT NULL,
+                language TEXT    NOT NULL,
+                label    TEXT    NOT NULL,
+                PRIMARY KEY (task_id, language)
+            );",
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -1473,6 +1540,7 @@ pub fn run() {
             show_prompt,
             skip_prompt,
             set_prompt_interval,
+            reset_prompt_timer,
             get_api_call_logs,
             get_api_call_stats,
             get_debug_mode,
