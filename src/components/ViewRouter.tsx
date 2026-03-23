@@ -9,13 +9,13 @@ import { SprintBoardView } from '../views/SprintBoardView';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function ViewRouter() {
-  const { currentView } = useNavigation();
+  const { currentView, pendingTaskId, clearPendingTask } = useNavigation();
 
   const views = {
     'home': <HomeView />,
     'work-log': <WorkLogView />,
     'calendar': <CalendarView />,
-    'sprint-board': <SprintBoardView />,
+    'sprint-board': <SprintBoardView initialTaskId={pendingTaskId} onInitialTaskOpened={clearPendingTask} />,
     'settings': <SettingsView />,
     'export': <ExportView />,
   };

@@ -10,6 +10,9 @@ interface NavigationContext {
   goToWorkLog: () => void;
   goToExport: () => void;
   showOnboarding: () => void;
+  navigateToTask: (taskId: number) => void;
+  pendingTaskId: number | null;
+  clearPendingTask: () => void;
 }
 
 const NavigationContext = createContext<NavigationContext | null>(null);
@@ -19,6 +22,7 @@ export function NavigationProvider({
   onShowOnboarding = () => {},
 }: Readonly<{ children: React.ReactNode; onShowOnboarding?: () => void }>) {
   const [currentView, setCurrentView] = useState<View>('work-log');
+  const [pendingTaskId, setPendingTaskId] = useState<number | null>(null);
 
   const navigate = (view: View) => {
     setCurrentView(view);
@@ -32,7 +36,13 @@ export function NavigationProvider({
     goToWorkLog: () => navigate('work-log'),
     goToExport: () => navigate('export'),
     showOnboarding: onShowOnboarding,
-  }), [currentView, onShowOnboarding]);
+    navigateToTask: (taskId: number) => {
+      setPendingTaskId(taskId);
+      setCurrentView('sprint-board');
+    },
+    pendingTaskId,
+    clearPendingTask: () => setPendingTaskId(null),
+  }), [currentView, pendingTaskId, onShowOnboarding]);
 
   return (
     <NavigationContext.Provider value={navigation}>
