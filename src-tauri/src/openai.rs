@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
-use std::env;
 use chrono::Utc;
+
+const PROXY_URL: &str = "https://worktape-proxy.daanmooij-385.workers.dev/v1";
+const APP_TOKEN: &str = "i0aqLmHXSfLGBoWeazPIFIvXjJTs5bbMfLmohXDIu7aur5cLRJTgQEyiDO1ECumT";
+const MODEL: &str = "gpt-4o-mini";
 
 pub(crate) fn language_instruction(language_code: &str) -> &'static str {
     match language_code {
@@ -184,25 +187,12 @@ pub async fn generate_grouped_summary(
     date: &str,
     language: &str,
 ) -> Result<(String, Vec<NewTaskLabel>), String> {
-    let api_key = env::var("OPENAI_API_KEY")
-        .map_err(|_| "OPENAI_API_KEY not set in environment. Please configure your .env file.".to_string())?;
-
-    let api_url = env::var("OPENAI_API_URL")
-        .unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
-
-    let model = env::var("OPENAI_MODEL")
-        .unwrap_or_else(|_| "gpt-4o-mini".to_string());
-
-    if api_key == "sk-your-api-key-here" || api_key.is_empty() {
-        return Err("Please set a valid OpenAI API key in the .env file.".to_string());
-    }
-
     if task_groups.is_empty() {
         return Err(format!("No work entries found for {}.", date));
     }
 
     let client = reqwest::Client::new();
-    let endpoint = format!("{}/chat/completions", api_url);
+    let endpoint = format!("{}/chat/completions", PROXY_URL);
     let mut items: Vec<SummaryItem> = Vec::new();
     let mut new_labels: Vec<NewTaskLabel> = Vec::new();
 
@@ -219,7 +209,7 @@ pub async fn generate_grouped_summary(
                     let user_message = build_linked_task_user_prompt(task_title, &group.entries, date);
 
                     let summary = call_openai_single(
-                        &client, &endpoint, &model, &api_key,
+                        &client, &endpoint, MODEL,
                         system_prompt, user_message, 120, language,
                     ).await?;
 
@@ -234,7 +224,7 @@ pub async fn generate_grouped_summary(
                     let user_message = build_linked_task_user_prompt(task_title, &group.entries, date);
 
                     let raw = call_openai_single(
-                        &client, &endpoint, &model, &api_key,
+                        &client, &endpoint, MODEL,
                         system_prompt, user_message, 150, language,
                     ).await?;
 
@@ -259,7 +249,7 @@ pub async fn generate_grouped_summary(
                 let user_message = build_unlinked_user_prompt(&group.entries, date);
 
                 let raw = call_openai_single(
-                    &client, &endpoint, &model, &api_key,
+                    &client, &endpoint, MODEL,
                     system_prompt, user_message, 400, language,
                 ).await?;
 
@@ -282,12 +272,11 @@ pub async fn generate_grouped_summary(
     Ok((json, new_labels))
 }
 
-/// Make a single OpenAI chat completion call and return the trimmed text response.
+/// Make a single chat completion call via the proxy and return the trimmed text response.
 async fn call_openai_single(
     client: &reqwest::Client,
     endpoint: &str,
     model: &str,
-    api_key: &str,
     system_prompt: String,
     user_message: String,
     max_tokens: u32,
@@ -318,7 +307,7 @@ async fn call_openai_single(
 
     let response = client
         .post(endpoint)
-        .header("Authorization", format!("Bearer {}", api_key))
+        .header("X-App-Token", APP_TOKEN)
         .header("Content-Type", "application/json")
         .json(&request)
         .send()
@@ -330,7 +319,7 @@ async fn call_openai_single(
     let response = match response {
         Ok(r) => r,
         Err(e) => {
-            let error_msg = format!("Failed to connect to OpenAI API: {}", e);
+            let error_msg = format!("Failed to connect to summary service: {}", e);
             log::error!("❌ API request failed: {}", error_msg);
             let _ = log_api_call(
                 "worktape.db", &request_timestamp, Some(&response_timestamp),
@@ -345,15 +334,15 @@ async fn call_openai_single(
         let status = response.status();
         let error_text = response.text().await.unwrap_or_default();
         let error_msg = match status.as_u16() {
-            401 => "Invalid API key. Please check your OPENAI_API_KEY in .env file.".to_string(),
+            401 => "Unauthorized. Please contact support.".to_string(),
             429 => "Rate limit exceeded. Please try again in a moment.".to_string(),
-            _ => format!("OpenAI API error ({}): {}", status, error_text),
+            _ => format!("Summary service error ({}): {}", status, error_text),
         };
         return Err(error_msg);
     }
 
     let api_response: OpenAIResponse = response.json().await
-        .map_err(|e| format!("Failed to parse OpenAI response: {}", e))?;
+        .map_err(|e| format!("Failed to parse summary response: {}", e))?;
 
     let text = api_response.choices
         .into_iter()
@@ -362,7 +351,7 @@ async fn call_openai_single(
             MessageContent::Text(t) => Some(t.trim().to_string()),
             _ => None,
         })
-        .ok_or("No response from OpenAI")?;
+        .ok_or("No response from summary service")?;
 
     let _ = log_api_call(
         "worktape.db", &request_timestamp, Some(&response_timestamp),

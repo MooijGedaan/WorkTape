@@ -1300,9 +1300,6 @@ async fn generate_grouped_daily_summary(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Load environment variables from .env file
-    dotenv::dotenv().ok();
-
     // Define database migrations
     let migrations = vec![
         Migration {
