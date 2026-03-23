@@ -29,18 +29,12 @@ function parseSummary(raw: string | null): SummaryItem[] | null {
   return null;
 }
 
-interface WorkEntryRow {
-  description: string;
-  timestamp: string;
-}
-
 interface DayData {
   date: string; // YYYY-MM-DD
   summary: string | null;
   entryCount: number;
   isToday: boolean;
   isDayEnded: boolean;
-  entries: WorkEntryRow[];
 }
 
 interface WeekGroup {
@@ -194,14 +188,7 @@ function DayCard({ day, onGenerate, onLabelClick }: { day: DayData; onGenerate: 
           <div className="flex flex-col gap-3">
             {canGenerate ? (
               <>
-                <ul className="space-y-1">
-                  {day.entries.map((entry, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                      <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500" />
-                      <span>{entry.description}</span>
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">{t('noSummaryYet')}</p>
                 {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
                 <button
                   onClick={handleGenerate}
@@ -254,16 +241,6 @@ export function CalendarView() {
         countMap.set(row.date, (countMap.get(row.date) ?? 0) + row.cnt);
       }
 
-      // Load all work entries grouped by date (for display when no summary exists)
-      const allEntries = await database.select<Array<{ date: string; description: string; timestamp: string }>>(
-        "SELECT DATE(timestamp) as date, description, timestamp FROM work_entries ORDER BY timestamp DESC"
-      );
-      const entriesMap = new Map<string, WorkEntryRow[]>();
-      for (const row of allEntries) {
-        if (!entriesMap.has(row.date)) entriesMap.set(row.date, []);
-        entriesMap.get(row.date)!.push({ description: row.description, timestamp: row.timestamp });
-      }
-
       // Check if today's day has been ended
       const dayEndingRows = await database.select<Array<{ date: string }>>(
         "SELECT date FROM day_endings WHERE date = ?",
@@ -280,7 +257,6 @@ export function CalendarView() {
         entryCount: countMap.get(date) ?? 0,
         isToday: date === todayStr,
         isDayEnded: date === todayStr ? isDayEnded : false,
-        entries: entriesMap.get(date) ?? [],
       }));
 
       setWeeks(groupByWeek(dayData, i18n.language, t('week')));
