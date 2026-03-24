@@ -17,7 +17,7 @@ import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
 interface SprintTask {
   id: number;
   title: string;
-  status: 'todo' | 'in-progress' | 'done' | 'blocked';
+  status: 'todo' | 'in-progress' | 'done' | 'paused';
 }
 
 interface WorkEntry {

@@ -66,7 +66,7 @@ const makeTask = (overrides: Partial<{
   id: number;
   title: string;
   description: string | null;
-  status: "todo" | "in-progress" | "done" | "blocked";
+  status: "todo" | "in-progress" | "done" | "paused";
   priority: "low" | "medium" | "high";
   position: number;
   created_at: string;
@@ -124,7 +124,7 @@ describe("SprintBoardView", () => {
     });
     expect(screen.getAllByText("columns.in-progress").length).toBeGreaterThan(0);
     expect(screen.getAllByText("columns.done").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("columns.blocked").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("columns.paused").length).toBeGreaterThan(0);
   });
 
   it("shows empty state when no tasks", async () => {
@@ -151,7 +151,9 @@ describe("SprintBoardView", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Todo Task")).toBeInTheDocument();
-      expect(screen.getByText("Done Task")).toBeInTheDocument();
+      // Done column is collapsed by default, so done tasks are not directly visible
+      // but the collapsed toggle shows the column name and count
+      expect(screen.getAllByText("columns.done").length).toBeGreaterThan(0);
     });
   });
 

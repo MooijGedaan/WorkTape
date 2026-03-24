@@ -20,7 +20,7 @@ interface SprintTask {
   id: number;
   title: string;
   description: string | null;
-  status: 'todo' | 'in-progress' | 'done' | 'blocked';
+  status: 'todo' | 'in-progress' | 'done' | 'paused';
   priority: 'low' | 'medium' | 'high';
   position: number;
   created_at: string;
@@ -47,10 +47,10 @@ interface WorkLink {
   relevance_score?: number;
 }
 
-type StatusKey = 'todo' | 'in-progress' | 'done' | 'blocked';
+type StatusKey = 'todo' | 'in-progress' | 'done' | 'paused';
 type PriorityKey = 'low' | 'medium' | 'high';
 
-const COLUMNS: StatusKey[] = ['todo', 'in-progress', 'done', 'blocked'];
+const COLUMNS: StatusKey[] = ['todo', 'in-progress', 'done', 'paused'];
 
 const PRIORITY_COLORS: Record<PriorityKey, string> = {
   low: 'border-l-zinc-400',
@@ -619,6 +619,8 @@ function BoardColumn({
   onPointerDown,
   draggingTaskId,
   isOver,
+  collapsible,
+  onToggleCollapse,
 }: {
   status: StatusKey;
   tasks: SprintTask[];
@@ -627,6 +629,8 @@ function BoardColumn({
   onPointerDown: (e: React.PointerEvent, task: SprintTask) => void;
   draggingTaskId: number | null;
   isOver: boolean;
+  collapsible?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const { t } = useTranslation('sprintboard');
 
@@ -634,7 +638,7 @@ function BoardColumn({
     'todo': 'bg-gradient-to-r from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-800/50 text-zinc-600 dark:text-zinc-300',
     'in-progress': 'bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/20 text-amber-700 dark:text-amber-300',
     'done': 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/20 text-green-700 dark:text-green-300',
-    'blocked': 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/20 text-red-700 dark:text-red-300',
+    'paused': 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/20 text-red-700 dark:text-red-300',
   };
 
   return (
@@ -643,7 +647,20 @@ function BoardColumn({
         <span className="text-xs font-semibold uppercase tracking-wide">
           {t(`columns.${status}`)}
         </span>
-        <span className="text-xs font-medium opacity-70">{tasks.length}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium opacity-70">{tasks.length}</span>
+          {collapsible && onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="text-xs opacity-60 hover:opacity-100 transition-opacity"
+              title={t('collapseDone')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 3l-5 5 5 5" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
       <div
         className={`flex-1 flex flex-col gap-2 p-2 rounded-b-lg border border-t-0 overflow-y-auto min-h-[200px] transition-colors ${
@@ -684,6 +701,7 @@ export function SprintBoardView({ initialTaskId, onInitialTaskOpened }: { initia
   const [selectedTask, setSelectedTask] = useState<SprintTask | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<PriorityKey | 'all'>('all');
+  const [showDone, setShowDone] = useState(false);
   const [draggingTask, setDraggingTask] = useState<SprintTask | null>(null);
   const [overColumn, setOverColumn] = useState<StatusKey | null>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
@@ -910,7 +928,7 @@ export function SprintBoardView({ initialTaskId, onInitialTaskOpened }: { initia
         </div>
       ) : (
         <div className="flex-1 flex gap-3 min-h-0 overflow-x-auto">
-          {COLUMNS.map((col) => (
+          {COLUMNS.filter((col) => col !== 'done').map((col) => (
             <BoardColumn
               key={col}
               status={col}
@@ -922,6 +940,36 @@ export function SprintBoardView({ initialTaskId, onInitialTaskOpened }: { initia
               isOver={overColumn === col}
             />
           ))}
+          {/* Collapsible Done column */}
+          {showDone ? (
+            <BoardColumn
+              key="done"
+              status="done"
+              tasks={tasksByStatus('done')}
+              onStatusChange={handleStatusChange}
+              onTaskClick={setSelectedTask}
+              onPointerDown={handlePointerDown}
+              draggingTaskId={draggingTask?.id ?? null}
+              isOver={overColumn === 'done'}
+              onToggleCollapse={() => setShowDone(false)}
+              collapsible
+            />
+          ) : (
+            <div className="flex flex-col min-h-0" data-column="done">
+              <button
+                onClick={() => setShowDone(true)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/20 text-green-700 dark:text-green-300 hover:from-green-100 hover:to-emerald-100 dark:hover:from-green-900/40 dark:hover:to-emerald-900/30 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 3l5 5-5 5" />
+                </svg>
+                <span className="text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
+                  {t('columns.done')}
+                </span>
+                <span className="text-xs font-medium opacity-70">{tasksByStatus('done').length}</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 

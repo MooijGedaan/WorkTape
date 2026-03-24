@@ -83,9 +83,9 @@ INSERT INTO sprint_tasks (id, title, description, status, priority, position, cr
   (10, 'Fix dark mode contrast on settings page', 'Several text elements fail WCAG AA contrast requirements in dark mode.', 'done', 'low', 2, '2026-03-18T08:00:00Z', '2026-03-20T10:30:00Z', NULL),
   (11, 'Database migration for user preferences v2', 'New schema for granular notification preferences. Must handle backward compat for existing rows.', 'done', 'medium', 3, '2026-03-17T09:00:00Z', '2026-03-20T11:15:00Z', NULL);
 
--- Blocked
+-- Paused
 INSERT INTO sprint_tasks (id, title, description, status, priority, position, created_at, updated_at, next_action) VALUES
-  (12, 'Integrate third-party analytics SDK', 'Waiting for vendor to provide production API keys and rate limit documentation. Follow-up scheduled for Monday.', 'blocked', 'medium', 0, '2026-03-16T13:00:00Z', '2026-03-20T10:00:00Z', 'Follow up with vendor contact on Monday');
+  (12, 'Integrate third-party analytics SDK', 'Waiting for vendor to provide production API keys and rate limit documentation. Follow-up scheduled for Monday.', 'paused', 'medium', 0, '2026-03-16T13:00:00Z', '2026-03-20T10:00:00Z', 'Follow up with vendor contact on Monday');
 
 -- ─── Labels ──────────────────────────────────────────────────────────────────
 

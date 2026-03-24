@@ -5,7 +5,7 @@
     "todo": "Te doen",
     "in-progress": "In uitvoering",
     "done": "Klaar",
-    "blocked": "Geblokkeerd"
+    "paused": "Gepauzeerd"
   },
   "priority": {
     "low": "Laag",
@@ -28,7 +28,7 @@
     "labelsLabel": "Labels",
     "labelsPlaceholder": "Label toevoegen en Enter drukken",
     "nextActionLabel": "Volgende actie / wachten op",
-    "nextActionPlaceholder": "bijv. wachten op PR-review, geblokkeerd tot stand-up",
+    "nextActionPlaceholder": "bijv. wachten op PR-review, gepauzeerd tot stand-up",
     "resolveNextAction": "Oplossen",
     "nextActionHistory": "Geschiedenis",
     "save": "Opslaan",
@@ -53,6 +53,7 @@
     "title": "Nog geen taken",
     "description": "Klik op \"Taak toevoegen\" om je eerste taak aan te maken."
   },
+  "collapseDone": "Inklappen",
   "loading": "Laden…",
   "relativeTime": {
     "justNow": "zojuist",
