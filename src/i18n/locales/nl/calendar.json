@@ -8,6 +8,7 @@
   "entryCount_other": "{{count}} items",
   "noEntries": "Geen werkitems voor deze dag.",
   "noEntriesThrown": "Geen werkitems gevonden voor deze dag.",
+  "noSummaryYet": "Nog geen AI-samenvatting gegenereerd.",
   "dayInProgress": "Dag bezig — sluit de dag af om een samenvatting te genereren.",
   "generateSummary": "✦ Genereer AI-samenvatting voor deze dag",
   "regenerateSummary": "AI-samenvatting opnieuw genereren voor deze dag",

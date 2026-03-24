@@ -8,6 +8,7 @@
   "entryCount_other": "{{count}} entries",
   "noEntries": "No work entries for this day.",
   "noEntriesThrown": "No work entries found for this day.",
+  "noSummaryYet": "No AI summary generated yet.",
   "dayInProgress": "Day in progress — end the day to generate a summary.",
   "generateSummary": "✦ Generate AI summary for this day",
   "regenerateSummary": "Regenerate AI summary for this day",
