@@ -48,6 +48,18 @@
     "title": "Feature tips",
     "description": "Small hints that surface when you visit a page for the first time."
   },
+  "updates": {
+    "title": "Software Updates",
+    "description": "Check for new versions of WorkTape.",
+    "currentVersion": "Current version: {{version}}",
+    "checkButton": "Check for updates",
+    "checking": "Checking…",
+    "availableVersion": "Version {{version}} is available!",
+    "installNow": "Update now",
+    "later": "Later",
+    "downloading": "Downloading update…",
+    "upToDate": "You're up to date!"
+  },
   "debug": {
     "title": "Debug Mode",
     "description": "Store full API requests (including screenshots) for debugging purposes.",

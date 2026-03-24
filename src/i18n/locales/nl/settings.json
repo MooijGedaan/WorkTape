@@ -48,6 +48,18 @@
     "title": "Functietips",
     "description": "Kleine hints die verschijnen wanneer u een pagina voor het eerst bezoekt."
   },
+  "updates": {
+    "title": "Software-updates",
+    "description": "Controleer op nieuwe versies van WorkTape.",
+    "currentVersion": "Huidige versie: {{version}}",
+    "checkButton": "Controleer op updates",
+    "checking": "Controleren…",
+    "availableVersion": "Versie {{version}} is beschikbaar!",
+    "installNow": "Nu bijwerken",
+    "later": "Later",
+    "downloading": "Update downloaden…",
+    "upToDate": "U bent up-to-date!"
+  },
   "debug": {
     "title": "Foutopsporingsmodus",
     "description": "Sla volledige API-verzoeken op (inclusief schermafbeeldingen) voor foutopsporing.",
