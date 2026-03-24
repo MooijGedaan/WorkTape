@@ -1617,6 +1617,33 @@ pub fn run() {
             );",
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 15,
+            description: "rename blocked status to paused in sprint_tasks",
+            sql: "
+                CREATE TABLE sprint_tasks_new (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title       TEXT NOT NULL,
+                    description TEXT,
+                    status      TEXT NOT NULL DEFAULT 'todo'
+                                CHECK(status IN ('todo','in-progress','done','paused')),
+                    priority    TEXT NOT NULL DEFAULT 'medium'
+                                CHECK(priority IN ('low','medium','high')),
+                    position    INTEGER NOT NULL DEFAULT 0,
+                    created_at  TEXT NOT NULL,
+                    updated_at  TEXT NOT NULL,
+                    next_action TEXT
+                );
+                INSERT INTO sprint_tasks_new (id, title, description, status, priority, position, created_at, updated_at, next_action)
+                    SELECT id, title, description,
+                           CASE WHEN status = 'blocked' THEN 'paused' ELSE status END,
+                           priority, position, created_at, updated_at, next_action
+                    FROM sprint_tasks;
+                DROP TABLE sprint_tasks;
+                ALTER TABLE sprint_tasks_new RENAME TO sprint_tasks;
+            ",
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

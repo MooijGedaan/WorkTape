@@ -5,7 +5,7 @@
     "todo": "To Do",
     "in-progress": "In Progress",
     "done": "Done",
-    "blocked": "Blocked"
+    "paused": "Paused"
   },
   "priority": {
     "low": "Low",
@@ -28,7 +28,7 @@
     "labelsLabel": "Labels",
     "labelsPlaceholder": "Add label and press Enter",
     "nextActionLabel": "Next action / on hold",
-    "nextActionPlaceholder": "e.g. waiting for PR review, blocked until standup",
+    "nextActionPlaceholder": "e.g. waiting for PR review, paused until standup",
     "resolveNextAction": "Resolve",
     "nextActionHistory": "History",
     "save": "Save",
@@ -53,6 +53,7 @@
     "title": "No tasks yet",
     "description": "Click \"Add Task\" to create your first task."
   },
+  "collapseDone": "Collapse",
   "loading": "Loading…",
   "relativeTime": {
     "justNow": "just now",

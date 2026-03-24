@@ -11,7 +11,7 @@
   "nextAction": {
     "toggle": "wachten / volgende stap",
     "label": "Wachten op of volgende actie",
-    "placeholder": "bijv. wachten op PR-review van Sarah, geblokkeerd tot stand-up"
+    "placeholder": "bijv. wachten op PR-review van Sarah, gepauzeerd tot stand-up"
   },
   "skip": {
     "minutes": "Sla {{count}} minuut over",

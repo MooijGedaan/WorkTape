@@ -11,7 +11,7 @@
   "nextAction": {
     "toggle": "on hold / next action",
     "label": "On hold or next action",
-    "placeholder": "e.g. waiting for PR review from Sarah, blocked until standup"
+    "placeholder": "e.g. waiting for PR review from Sarah, paused until standup"
   },
   "skip": {
     "minutes": "Skip {{count}} minute",
