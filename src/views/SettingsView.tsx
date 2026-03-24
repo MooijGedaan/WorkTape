@@ -13,6 +13,7 @@ import { Switch } from '../components/catalyst/switch';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { useTheme, type Theme } from '../hooks/useTheme';
 import { useNavigation } from '../hooks/useNavigation';
+import { useUpdater } from '../hooks/useUpdater';
 import { ChevronDownIcon } from '../components/icons';
 import { ErrorNotification } from '../components/ErrorNotification';
 import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
@@ -25,6 +26,7 @@ export function SettingsView() {
   const { theme, setTheme } = useTheme();
   const { showOnboarding } = useNavigation();
   const { markSeen, isAllDisabled, disableAll, enableAll } = useTooltipHints();
+  const updater = useUpdater();
   const [activeHint, setActiveHint] = useState<HintId | null>(null);
   const [developerOpen, setDeveloperOpen] = useState(false);
   const [launchOnStartup, setLaunchOnStartup] = useState<boolean>(false);
@@ -336,6 +338,66 @@ export function SettingsView() {
           >
             {isAllDisabled ? t('common:tooltipHints.enableAll') : t('common:tooltipHints.disableAll')}
           </Button>
+        </div>
+
+        {/* Software Updates */}
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
+          <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
+            {t('settings:updates.title')}
+          </h3>
+          <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            {updater.currentVersion
+              ? t('settings:updates.currentVersion', { version: updater.currentVersion })
+              : t('settings:updates.description')}
+          </Text>
+
+          {updater.available && updater.version && !updater.downloading && (
+            <div className="mt-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 p-3">
+              <Text className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                {t('settings:updates.availableVersion', { version: updater.version })}
+              </Text>
+              <div className="mt-2 flex gap-2">
+                <Button onClick={updater.downloadAndInstall} color="amber">
+                  {t('settings:updates.installNow')}
+                </Button>
+                <Button onClick={updater.dismiss} color="zinc">
+                  {t('settings:updates.later')}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {updater.downloading && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+                <span>{t('settings:updates.downloading')}</span>
+                <span>{updater.progress}%</span>
+              </div>
+              <div className="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2">
+                <div
+                  className="bg-amber-500 dark:bg-amber-400 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${updater.progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {updater.error && (
+            <Text className="mt-2 text-sm text-red-600 dark:text-red-400">
+              {updater.error}
+            </Text>
+          )}
+
+          {!updater.available && !updater.downloading && (
+            <Button
+              onClick={updater.checkForUpdates}
+              disabled={updater.checking}
+              color="zinc"
+              className="mt-3"
+            >
+              {updater.checking ? t('settings:updates.checking') : t('settings:updates.checkButton')}
+            </Button>
+          )}
         </div>
 
         {/* Developer section (collapsible) */}

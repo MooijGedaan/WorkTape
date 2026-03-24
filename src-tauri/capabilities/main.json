@@ -14,7 +14,10 @@
     "core:window:allow-start-dragging",
     "core:event:allow-emit",
     "core:event:allow-listen",
-    "dialog:allow-save"
+    "dialog:allow-save",
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download-and-install"
   ],
   "_securityNotes": {
     "sql:allow-execute": "RISK: overly broad — tauri-plugin-sql v2 does not support per-database scoping in capabilities. All SQL execute calls are validated in Rust command handlers in src-tauri/src/lib.rs, which only operate on worktape.db. Revisit if tauri-plugin-sql adds per-database scope support.",

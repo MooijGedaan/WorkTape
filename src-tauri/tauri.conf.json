@@ -28,7 +28,15 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://worktape-proxy.daanmooij-385.workers.dev;"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://worktape-proxy.daanmooij-385.workers.dev https://api.github.com https://github.com;"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/MooijGedaan/WorkTape/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlDRURCRDU1RUM2MEU3M0YKUldRLzUyRHNWYjN0blBQTmZ5QXlOWCtNaW5hWCtHa0E0UDlwTXJ0NWg2NmJ4Ni84ZXplNGFXL3oK"
     }
   },
   "bundle": {
