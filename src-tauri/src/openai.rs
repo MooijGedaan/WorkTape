@@ -191,7 +191,6 @@ pub async fn generate_grouped_summary(
 
     let client = reqwest::Client::new();
     let endpoint = format!("{}/chat/completions", PROXY_URL);
-    let endpoint = format!("{}/chat/completions", PROXY_URL);
     let mut items: Vec<SummaryItem> = Vec::new();
     let mut new_labels: Vec<NewTaskLabel> = Vec::new();
 
@@ -344,7 +343,6 @@ async fn call_openai_single(
 
     let api_response: OpenAIResponse = response.json().await
         .map_err(|e| format!("Failed to parse summary response: {}", e))?;
-        .map_err(|e| format!("Failed to parse summary response: {}", e))?;
 
     let text = api_response.choices
         .into_iter()
@@ -353,7 +351,6 @@ async fn call_openai_single(
             MessageContent::Text(t) => Some(t.trim().to_string()),
             _ => None,
         })
-        .ok_or("No response from summary service")?;
         .ok_or("No response from summary service")?;
 
     let _ = log_api_call(
