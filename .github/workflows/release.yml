@@ -59,6 +59,7 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'WorkTape v__VERSION__'
           releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
+          updaterJsonKeepUniversal: true
           args: ${{ matrix.args }}

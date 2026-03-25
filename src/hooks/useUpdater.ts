@@ -51,10 +51,14 @@ export function useUpdater() {
         }));
       }
     } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e);
+      const friendly = raw.includes('status code')
+        ? 'No updates available yet. Check back later.'
+        : raw;
       setState((s) => ({
         ...s,
         checking: false,
-        error: e instanceof Error ? e.message : String(e),
+        error: friendly,
       }));
     }
   }, []);
