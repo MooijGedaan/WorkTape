@@ -244,3 +244,34 @@ The existing `language_instruction()` function in `openai.rs` already handles la
 - **Collapsible weeks:** Should week groups be collapsible from the start, or defer to a follow-up issue?
 - **Auto-generation:** Should weekly/monthly summaries be auto-generated when all prerequisites are met, or always require a manual trigger?
 - **Export integration:** Should the existing export feature include weekly/monthly summaries alongside daily ones?
+
+---
+
+## 8. Implementation Notes
+
+**Implemented on:** 2026-03-25
+
+### What was done
+
+All core items from the plan were implemented:
+
+1. **Database migration (v16):** Added `ai_weekly_summaries` and `ai_monthly_summaries` tables with composite primary keys (year, week/month).
+
+2. **Backend commands:** Added `generate_weekly_summary` and `generate_monthly_summary` Tauri commands in `lib.rs`, with corresponding `generate_weekly_summary_ai` and `generate_monthly_summary_ai` functions in `openai.rs`. Both follow the existing pattern with device token handling and retry on token revocation.
+
+3. **AI prompts:** Weekly summaries are generated from daily summaries, monthly from weekly summaries, following the hierarchical chain described in the plan.
+
+4. **Frontend components:**
+   - `SummaryItems` — shared component extracted from DayCard for rendering summary item grids (labels + summaries), reused across all three summary levels.
+   - `WeekSummaryCard` — displays weekly summary with generate/regenerate button. Only enables generation when all days with entries have daily summaries and the week is not current.
+   - `MonthSummaryCard` — displays monthly summary at month boundaries. Only enables generation for completed months.
+
+5. **CalendarView integration:** Extended `WeekGroup` with `year`, `weekNum`, `month`, and `weeklySummary` fields. Added `MonthData` interface. Month boundaries are detected during rendering to insert month summary cards.
+
+6. **i18n:** Added all translation keys for both EN and NL locales.
+
+### Decisions made on open questions
+
+- **Collapsible weeks:** Deferred to a follow-up — not implemented in this iteration.
+- **Auto-generation:** Manual trigger only. Users must click "Generate" for each level.
+- **Export integration:** Not included — can be added in a follow-up.

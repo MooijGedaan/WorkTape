@@ -1395,6 +1395,84 @@ async fn generate_grouped_daily_summary(
     Ok(json)
 }
 
+#[tauri::command]
+async fn generate_weekly_summary(
+    app: tauri::AppHandle,
+    daily_summaries: Vec<(String, String)>, // (date, summary_json)
+    week_label: String,
+    language: String,
+) -> Result<String, String> {
+    let db_path = app.path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+        .join("worktape.db");
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&format!("sqlite:{}", db_path.display()))
+        .await
+        .map_err(|e| format!("Failed to open DB: {}", e))?;
+
+    let device_token = ensure_device_token(&pool).await?;
+
+    let result = openai::generate_weekly_summary_ai(
+        daily_summaries.clone(), &week_label, &language, &device_token
+    ).await;
+
+    let json = match result {
+        Err(ref e) if e == "TOKEN_REVOKED" => {
+            sqlx::query("DELETE FROM settings WHERE key = 'device_token'")
+                .execute(&pool).await.ok();
+            let new_token = register_device(&pool).await?;
+            openai::generate_weekly_summary_ai(
+                daily_summaries, &week_label, &language, &new_token
+            ).await?
+        }
+        other => other?,
+    };
+
+    pool.close().await;
+    Ok(json)
+}
+
+#[tauri::command]
+async fn generate_monthly_summary(
+    app: tauri::AppHandle,
+    weekly_summaries: Vec<(String, String)>, // (week_label, summary_json)
+    month_label: String,
+    language: String,
+) -> Result<String, String> {
+    let db_path = app.path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+        .join("worktape.db");
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&format!("sqlite:{}", db_path.display()))
+        .await
+        .map_err(|e| format!("Failed to open DB: {}", e))?;
+
+    let device_token = ensure_device_token(&pool).await?;
+
+    let result = openai::generate_monthly_summary_ai(
+        weekly_summaries.clone(), &month_label, &language, &device_token
+    ).await;
+
+    let json = match result {
+        Err(ref e) if e == "TOKEN_REVOKED" => {
+            sqlx::query("DELETE FROM settings WHERE key = 'device_token'")
+                .execute(&pool).await.ok();
+            let new_token = register_device(&pool).await?;
+            openai::generate_monthly_summary_ai(
+                weekly_summaries, &month_label, &language, &new_token
+            ).await?
+        }
+        other => other?,
+    };
+
+    pool.close().await;
+    Ok(json)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Define database migrations
@@ -1644,6 +1722,29 @@ pub fn run() {
             ",
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 16,
+            description: "create weekly and monthly summary tables",
+            sql: "
+                CREATE TABLE IF NOT EXISTS ai_weekly_summaries (
+                    year INTEGER NOT NULL,
+                    week INTEGER NOT NULL,
+                    summary TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (year, week)
+                );
+                CREATE TABLE IF NOT EXISTS ai_monthly_summaries (
+                    year INTEGER NOT NULL,
+                    month INTEGER NOT NULL,
+                    summary TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (year, month)
+                );
+            ",
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -1688,7 +1789,9 @@ pub fn run() {
             end_day,
             unend_day,
             is_day_ended,
-            generate_grouped_daily_summary
+            generate_grouped_daily_summary,
+            generate_weekly_summary,
+            generate_monthly_summary
         ])
         .setup(|app| {
             // Initialize logging with default INFO level
