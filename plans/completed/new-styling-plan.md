@@ -187,3 +187,32 @@ This plan should be implemented in the following order to minimize conflicts and
 - Ensure sufficient contrast ratios (WCAG AA minimum) with the new palette, especially in dark mode.
 - Check that the sidebar active state remains clearly distinguishable.
 - Verify the app feels cohesive with the website by comparing side-by-side.
+
+---
+
+## 8. Implementation Notes
+
+**Implemented on:** 2026-03-25
+
+### What was done
+
+1. **Typography:** Added Lora (serif, variable 400-700) and Plus Jakarta Sans (sans-serif, variable 200-800) font files. Updated app.css with @font-face declarations. Plus Jakarta Sans is now the default `--font-sans`, Lora added as `--font-serif`. Heading component now uses `font-serif` class.
+
+2. **CSS theme variables:** Added `--color-primary`, `--color-primary-light`, `--color-accent`, `--color-accent-light` custom properties mapped to slate and amber.
+
+3. **Catalyst components updated:**
+   - `heading.tsx`: Serif font, zinc -> slate text colors
+   - `text.tsx`: zinc -> slate text colors
+   - `button.tsx`: Focus ring changed from amber-500 to slate-900/slate-400 (dark)
+   - `sidebar.tsx`: Active indicator from amber to slate-900/white, hover backgrounds from zinc to slate, icon fill colors updated
+
+4. **HomeView:** Removed amber/orange gradient title (now solid serif heading), replaced colored top-border cards with clean rounded-xl border cards, updated icon backgrounds from amber/orange to slate, increased card padding, reduced shadow intensity.
+
+5. **Inter font preserved** for backwards compatibility — can be removed in a follow-up once migration is verified.
+
+### What was deferred
+
+- Full color sweep of all remaining views (SprintBoardView, WorkLogView, CalendarView, SettingsView, ExportView) — these still use zinc/amber in places. This is intentional to allow incremental review.
+- Dark mode consistency pass across all views
+- Spacing and shadow refinement in secondary views
+- TitleBar and OnboardingModal accent updates

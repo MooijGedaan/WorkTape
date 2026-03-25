@@ -82,26 +82,26 @@ export const SidebarItem = forwardRef(function SidebarItem(
 ) {
   let classes = clsx(
     // Base
-    'flex w-full items-center gap-3 px-2 py-2.5 text-left text-base/6 font-medium text-zinc-950 sm:py-2 sm:text-sm/5',
+    'flex w-full items-center gap-3 px-2 py-2.5 text-left text-base/6 font-medium text-slate-900 sm:py-2 sm:text-sm/5',
     // Leading icon/icon-only
-    '*:data-[slot=icon]:size-6 *:data-[slot=icon]:shrink-0 *:data-[slot=icon]:fill-zinc-500 sm:*:data-[slot=icon]:size-5',
+    '*:data-[slot=icon]:size-6 *:data-[slot=icon]:shrink-0 *:data-[slot=icon]:fill-slate-500 sm:*:data-[slot=icon]:size-5',
     // Trailing icon (down chevron or similar)
     '*:last:data-[slot=icon]:ml-auto *:last:data-[slot=icon]:size-5 sm:*:last:data-[slot=icon]:size-4',
     // Avatar
     '*:data-[slot=avatar]:-m-0.5 *:data-[slot=avatar]:size-7 sm:*:data-[slot=avatar]:size-6',
     // Hover background
-    'rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700',
+    'rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700',
     // Hover icon
-    'data-hover:*:data-[slot=icon]:fill-zinc-950',
+    'data-hover:*:data-[slot=icon]:fill-slate-900',
     // Active
-    'data-active:*:data-[slot=icon]:fill-zinc-950',
+    'data-active:*:data-[slot=icon]:fill-slate-900',
     // Current
-    'data-current:*:data-[slot=icon]:fill-amber-600',
+    'data-current:*:data-[slot=icon]:fill-slate-900',
     // Dark mode
-    'dark:text-white dark:*:data-[slot=icon]:fill-zinc-400',
+    'dark:text-white dark:*:data-[slot=icon]:fill-slate-400',
     'dark:data-hover:*:data-[slot=icon]:fill-white',
     'dark:data-active:*:data-[slot=icon]:fill-white',
-    'dark:data-current:*:data-[slot=icon]:fill-amber-400'
+    'dark:data-current:*:data-[slot=icon]:fill-white'
   )
 
   return (
@@ -109,7 +109,7 @@ export const SidebarItem = forwardRef(function SidebarItem(
       {current && (
         <motion.span
           layoutId="current-indicator"
-          className="absolute inset-y-2 -left-4 w-1 rounded-full bg-amber-500 dark:bg-amber-400"
+          className="absolute inset-y-2 -left-4 w-1 rounded-full bg-slate-900 dark:bg-white"
         />
       )}
       <a

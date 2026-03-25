@@ -149,10 +149,10 @@ export function HomeView() {
       />
     )}
     <div className="h-full">
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent dark:from-amber-400 dark:to-orange-400">
+      <h1 className="font-serif text-3xl font-bold text-slate-900 dark:text-white">
         {t('home:title')}
       </h1>
-      <Text className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
+      <Text className="mt-4 text-lg text-slate-600 dark:text-slate-400">
         {t('home:subtitle')}
       </Text>
 
@@ -165,18 +165,18 @@ export function HomeView() {
         {/* Total Entries */}
         <motion.div
           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-          className="rounded-lg border-t-3 border-amber-500 bg-white p-6 shadow-md hover:shadow-lg transition-shadow ring-1 ring-zinc-950/5 dark:bg-gradient-to-b dark:from-amber-950/20 dark:to-zinc-900 dark:ring-white/10"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white p-8 shadow-sm hover:shadow-md transition-shadow dark:bg-slate-800"
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
-              <DocumentIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700">
+              <DocumentIcon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
             </div>
-            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t('home:stats.totalEntries.label')}</h3>
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('home:stats.totalEntries.label')}</h3>
           </div>
-          <p className="text-3xl font-semibold text-zinc-950 dark:text-white">
+          <p className="text-3xl font-semibold text-slate-900 dark:text-white">
             {isLoading ? '...' : <AnimatedNumber value={stats.totalEntries} />}
           </p>
-          <Text className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {t('home:stats.totalEntries.description')}
           </Text>
         </motion.div>
@@ -184,18 +184,18 @@ export function HomeView() {
         {/* This Week */}
         <motion.div
           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-          className="rounded-lg border-t-3 border-orange-500 bg-white p-6 shadow-md hover:shadow-lg transition-shadow ring-1 ring-zinc-950/5 dark:bg-gradient-to-b dark:from-amber-950/20 dark:to-zinc-900 dark:ring-white/10"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white p-8 shadow-sm hover:shadow-md transition-shadow dark:bg-slate-800"
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/40">
-              <CalendarDaysIcon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700">
+              <CalendarDaysIcon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
             </div>
-            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t('home:stats.thisWeek.label')}</h3>
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('home:stats.thisWeek.label')}</h3>
           </div>
-          <p className="text-3xl font-semibold text-zinc-950 dark:text-white">
+          <p className="text-3xl font-semibold text-slate-900 dark:text-white">
             {isLoading ? '...' : <AnimatedNumber value={stats.thisWeekEntries} />}
           </p>
-          <Text className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {t('home:stats.thisWeek.description')}
           </Text>
         </motion.div>
@@ -203,25 +203,25 @@ export function HomeView() {
         {/* Streak */}
         <motion.div
           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-          className="rounded-lg border-t-3 border-emerald-500 bg-white p-6 shadow-md hover:shadow-lg transition-shadow ring-1 ring-zinc-950/5 dark:bg-gradient-to-b dark:from-amber-950/20 dark:to-zinc-900 dark:ring-white/10"
+          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white p-8 shadow-sm hover:shadow-md transition-shadow dark:bg-slate-800"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/40">
               <ClockIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t('home:stats.streak.label')}</h3>
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('home:stats.streak.label')}</h3>
           </div>
-          <p className="text-3xl font-semibold text-zinc-950 dark:text-white">
+          <p className="text-3xl font-semibold text-slate-900 dark:text-white">
             {isLoading ? '...' : t('home:stats.streak.days', { count: stats.currentStreak })}
           </p>
-          <Text className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <Text className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {t('home:stats.streak.description')}
           </Text>
         </motion.div>
       </motion.div>
 
       <div className="mt-8">
-        <Button onClick={goToWorkLog} color="amber">
+        <Button onClick={goToWorkLog} color="dark">
           {t('home:actions.goToWorkLog')}
         </Button>
       </div>
