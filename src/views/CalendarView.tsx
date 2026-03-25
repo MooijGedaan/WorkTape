@@ -29,6 +29,32 @@ function parseSummary(raw: string | null): SummaryItem[] | null {
   return null;
 }
 
+/** Build a label → task_id map from a collection of summary JSON strings. */
+function buildLabelTaskMap(summaryJsonStrings: string[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const json of summaryJsonStrings) {
+    const items = parseSummary(json);
+    if (!items) continue;
+    for (const item of items) {
+      if (item.task_id != null && item.label) {
+        map.set(item.label.toLowerCase(), item.task_id);
+      }
+    }
+  }
+  return map;
+}
+
+/** Inject task_ids into AI-generated summary items by matching labels. */
+function injectTaskIds(summaryJson: string, labelTaskMap: Map<string, number>): string {
+  const items = parseSummary(summaryJson);
+  if (!items) return summaryJson;
+  const enriched = items.map(item => {
+    const id = labelTaskMap.get(item.label.toLowerCase());
+    return id != null ? { ...item, task_id: id } : item;
+  });
+  return JSON.stringify(enriched);
+}
+
 interface DayData {
   date: string; // YYYY-MM-DD
   summary: string | null;
@@ -608,16 +634,19 @@ export function CalendarView() {
       language: i18n.language,
     });
 
+    const labelTaskMap = buildLabelTaskMap(dailySummaries.map(([, json]) => json));
+    const enrichedSummary = injectTaskIds(generatedSummary, labelTaskMap);
+
     const now = new Date().toISOString();
     await database.execute(
       "INSERT OR REPLACE INTO ai_weekly_summaries (year, week, summary, created_at, updated_at) VALUES (?, ?, ?, COALESCE((SELECT created_at FROM ai_weekly_summaries WHERE year = ? AND week = ?), ?), ?)",
-      [week.year, week.weekNum, generatedSummary, week.year, week.weekNum, now, now]
+      [week.year, week.weekNum, enrichedSummary, week.year, week.weekNum, now, now]
     );
 
     // Update state
     setWeeks(prev => prev.map(w =>
       w.year === week.year && w.weekNum === week.weekNum
-        ? { ...w, weeklySummary: generatedSummary }
+        ? { ...w, weeklySummary: enrichedSummary }
         : w
     ));
   }, [i18n.language, t]);
@@ -642,11 +671,14 @@ export function CalendarView() {
       language: i18n.language,
     });
 
+    const labelTaskMap = buildLabelTaskMap(weeklySummaries.map(([, json]) => json));
+    const enrichedSummary = injectTaskIds(generatedSummary, labelTaskMap);
+
     const now = new Date().toISOString();
     const dbMonth = monthData.month + 1; // Store as 1-based
     await database.execute(
       "INSERT OR REPLACE INTO ai_monthly_summaries (year, month, summary, created_at, updated_at) VALUES (?, ?, ?, COALESCE((SELECT created_at FROM ai_monthly_summaries WHERE year = ? AND month = ?), ?), ?)",
-      [monthData.year, dbMonth, generatedSummary, monthData.year, dbMonth, now, now]
+      [monthData.year, dbMonth, enrichedSummary, monthData.year, dbMonth, now, now]
     );
 
     // Update state
@@ -655,7 +687,7 @@ export function CalendarView() {
       const key = `${monthData.year}-${monthData.month}`;
       const existing = next.get(key);
       if (existing) {
-        next.set(key, { ...existing, summary: generatedSummary });
+        next.set(key, { ...existing, summary: enrichedSummary });
       }
       return next;
     });

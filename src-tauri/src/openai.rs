@@ -270,6 +270,18 @@ pub async fn generate_grouped_summary(
     Ok((json, new_labels))
 }
 
+/// Strip markdown code fences (e.g. ```json ... ```) from AI responses.
+fn strip_code_fence(s: &str) -> String {
+    let s = if let Some(inner) = s.strip_prefix("```") {
+        // Skip optional language tag on the first line
+        let after = inner.trim_start_matches(|c: char| c.is_alphanumeric());
+        after.strip_prefix('\n').unwrap_or(after)
+    } else {
+        return s.to_string();
+    };
+    s.strip_suffix("```").unwrap_or(s).trim().to_string()
+}
+
 /// Make a single chat completion call via the proxy and return the trimmed text response.
 /// Make a single chat completion call via the proxy and return the trimmed text response.
 async fn call_openai_single(
@@ -318,7 +330,6 @@ async fn call_openai_single(
         Ok(r) => r,
         Err(e) => {
             let error_msg = format!("Failed to connect to summary service: {}", e);
-            let error_msg = format!("Failed to connect to summary service: {}", e);
             log::error!("❌ API request failed: {}", error_msg);
             let _ = log_api_call(
                 "worktape.db", &request_timestamp, Some(&response_timestamp),
@@ -336,7 +347,6 @@ async fn call_openai_single(
             401 => return Err("TOKEN_REVOKED".to_string()),
             429 => "Rate limit exceeded. Please try again in a moment.".to_string(),
             _ => format!("Summary service error ({}): {}", status, error_text),
-            _ => format!("Summary service error ({}): {}", status, error_text),
         };
         return Err(error_msg);
     }
@@ -348,7 +358,7 @@ async fn call_openai_single(
         .into_iter()
         .next()
         .and_then(|c| match c.message.content {
-            MessageContent::Text(t) => Some(t.trim().to_string()),
+            MessageContent::Text(t) => Some(strip_code_fence(t.trim())),
             _ => None,
         })
         .ok_or("No response from summary service")?;
