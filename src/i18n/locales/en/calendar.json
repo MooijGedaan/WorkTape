@@ -14,5 +14,17 @@
   "regenerateSummary": "Regenerate AI summary for this day",
   "generating": "Generating summary…",
   "regenerating": "Regenerating…",
-  "week": "Week"
+  "week": "Week",
+  "weekSummary": "Week summary",
+  "monthSummary": "Monthly summary",
+  "generateWeekSummary": "✦ Generate AI summary for this week",
+  "generateMonthSummary": "✦ Generate AI summary for this month",
+  "regenerateWeekSummary": "Regenerate AI summary for this week",
+  "regenerateMonthSummary": "Regenerate AI summary for this month",
+  "generatingWeekSummary": "Generating week summary…",
+  "generatingMonthSummary": "Generating month summary…",
+  "weekInProgress": "Generate daily summaries for all days in this week first.",
+  "monthInProgress": "Generate weekly summaries for all weeks in this month first.",
+  "weekStats": "{{days}} days, {{entries}} entries",
+  "monthStats": "{{weeks}} weeks, {{entries}} entries"
 }

@@ -425,3 +425,83 @@ fn build_unlinked_user_prompt(entries: &[WorkEntry], date: &str) -> String {
     }
     prompt
 }
+
+// ─── Weekly / Monthly summary generation ─────────────────────────────────────
+
+fn build_weekly_system_prompt(language_code: &str) -> String {
+    format!(
+        "You will receive AI-generated daily summaries for a work week. \
+Synthesize them into a weekly overview. Return a JSON array where each element has:\
+- \"label\": a short (2-5 word) topic/project label\
+- \"summary\": one concise sentence summarizing the week's progress on that topic\
+Merge related daily topics into single weekly items. Focus on outcomes and progress, not individual activities.\
+Return only the JSON array, no other text.\
+{}",
+        language_instruction(language_code)
+    )
+}
+
+fn build_weekly_user_prompt(daily_summaries: &[(String, String)], week_label: &str) -> String {
+    let mut prompt = format!("Daily summaries for {}:\n\n", week_label);
+    for (date, summary_json) in daily_summaries {
+        prompt.push_str(&format!("{}:\n{}\n\n", date, summary_json));
+    }
+    prompt
+}
+
+fn build_monthly_system_prompt(language_code: &str) -> String {
+    format!(
+        "You will receive AI-generated weekly summaries for a work month. \
+Synthesize them into a monthly overview. Return a JSON array where each element has:\
+- \"label\": a short (2-5 word) topic/project label\
+- \"summary\": one concise sentence summarizing the month's progress on that topic\
+Merge related weekly topics into single monthly items. Focus on accomplishments and milestones.\
+Return only the JSON array, no other text.\
+{}",
+        language_instruction(language_code)
+    )
+}
+
+fn build_monthly_user_prompt(weekly_summaries: &[(String, String)], month_label: &str) -> String {
+    let mut prompt = format!("Weekly summaries for {}:\n\n", month_label);
+    for (week_label, summary_json) in weekly_summaries {
+        prompt.push_str(&format!("{}:\n{}\n\n", week_label, summary_json));
+    }
+    prompt
+}
+
+pub async fn generate_weekly_summary_ai(
+    daily_summaries: Vec<(String, String)>,
+    week_label: &str,
+    language: &str,
+    device_token: &str,
+) -> Result<String, String> {
+    let client = reqwest::Client::new();
+    let endpoint = format!("{}/chat/completions", PROXY_URL);
+
+    let system_prompt = build_weekly_system_prompt(language);
+    let user_message = build_weekly_user_prompt(&daily_summaries, week_label);
+
+    call_openai_single(
+        &client, &endpoint,
+        system_prompt, user_message, 300, language, device_token,
+    ).await
+}
+
+pub async fn generate_monthly_summary_ai(
+    weekly_summaries: Vec<(String, String)>,
+    month_label: &str,
+    language: &str,
+    device_token: &str,
+) -> Result<String, String> {
+    let client = reqwest::Client::new();
+    let endpoint = format!("{}/chat/completions", PROXY_URL);
+
+    let system_prompt = build_monthly_system_prompt(language);
+    let user_message = build_monthly_user_prompt(&weekly_summaries, month_label);
+
+    call_openai_single(
+        &client, &endpoint,
+        system_prompt, user_message, 500, language, device_token,
+    ).await
+}

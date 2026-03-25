@@ -14,5 +14,17 @@
   "regenerateSummary": "AI-samenvatting opnieuw genereren voor deze dag",
   "generating": "Samenvatting genereren…",
   "regenerating": "Opnieuw genereren…",
-  "week": "Week"
+  "week": "Week",
+  "weekSummary": "Weeksamenvatting",
+  "monthSummary": "Maandsamenvatting",
+  "generateWeekSummary": "✦ Genereer AI-samenvatting voor deze week",
+  "generateMonthSummary": "✦ Genereer AI-samenvatting voor deze maand",
+  "regenerateWeekSummary": "AI-samenvatting opnieuw genereren voor deze week",
+  "regenerateMonthSummary": "AI-samenvatting opnieuw genereren voor deze maand",
+  "generatingWeekSummary": "Weeksamenvatting genereren…",
+  "generatingMonthSummary": "Maandsamenvatting genereren…",
+  "weekInProgress": "Genereer eerst dagelijkse samenvattingen voor alle dagen in deze week.",
+  "monthInProgress": "Genereer eerst weeksamenvattingen voor alle weken in deze maand.",
+  "weekStats": "{{days}} dagen, {{entries}} items",
+  "monthStats": "{{weeks}} weken, {{entries}} items"
 }
