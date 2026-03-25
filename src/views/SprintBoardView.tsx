@@ -302,9 +302,11 @@ function TaskDetailDialog({
   const [labelInput, setLabelInput] = useState('');
   const [labels, setLabels] = useState<string[]>([]);
   const [nextAction, setNextAction] = useState('');
+  const [nextActionInput, setNextActionInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<NextActionHistoryEntry[]>([]);
   const [resolving, setResolving] = useState(false);
+  const [savingNextAction, setSavingNextAction] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const loadHistory = async (taskId: number) => {
@@ -324,6 +326,7 @@ function TaskDetailDialog({
       setPriority(task.priority);
       setLabels(task.labels);
       setNextAction(task.next_action ?? '');
+      setNextActionInput('');
       setHistory([]);
       loadHistory(task.id);
     }
@@ -346,6 +349,33 @@ function TaskDetailDialog({
       onClose();
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveNextAction = async () => {
+    if (!task || !nextActionInput.trim()) return;
+    setSavingNextAction(true);
+    try {
+      // If there's already a current next action, resolve it first
+      if (nextAction.trim()) {
+        await invoke('resolve_next_action', { taskId: task.id });
+      }
+      // Save the new next action
+      await invoke('update_sprint_task', {
+        id: task.id,
+        title: task.title,
+        description: task.description ?? null,
+        status: task.status,
+        priority: task.priority,
+        position: task.position,
+        nextAction: nextActionInput.trim(),
+      });
+      setNextAction(nextActionInput.trim());
+      setNextActionInput('');
+      await loadHistory(task.id);
+      await onResolve(task.id);
+    } finally {
+      setSavingNextAction(false);
     }
   };
 
@@ -460,13 +490,36 @@ function TaskDetailDialog({
               <div className="flex gap-2 items-center">
                 <input
                   type="text"
-                  value={nextAction}
-                  onChange={(e) => setNextAction(e.target.value)}
+                  value={nextActionInput}
+                  onChange={(e) => setNextActionInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveNextAction(); } }}
                   placeholder={t('taskForm.nextActionPlaceholder')}
                   maxLength={200}
                   className="flex-1 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
-                {nextAction.trim() && (
+                {nextActionInput.trim() && (
+                  <button
+                    type="button"
+                    onClick={handleSaveNextAction}
+                    disabled={savingNextAction}
+                    className="flex-shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/60 transition-colors disabled:opacity-50"
+                    title={t('taskForm.saveNextAction')}
+                  >
+                    {savingNextAction ? '…' : t('taskForm.saveNextAction')}
+                  </button>
+                )}
+              </div>
+
+              {/* Current next action box */}
+              {nextAction.trim() && (
+                <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+                  <ClockIcon className="h-4 w-4 flex-shrink-0 text-amber-500 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                      {t('taskForm.currentNextAction')}
+                    </span>
+                    <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-snug mt-0.5">{nextAction}</p>
+                  </div>
                   <button
                     type="button"
                     onClick={handleResolve}
@@ -476,17 +529,19 @@ function TaskDetailDialog({
                   >
                     {resolving ? '…' : t('taskForm.resolveNextAction')}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Resolved next action history */}
               {history.length > 0 && (
                 <div className="mt-2 flex flex-col gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
                     {t('taskForm.nextActionHistory')}
                   </span>
                   {history.map((entry) => (
-                    <div key={entry.id} className="flex items-start gap-2 px-2 py-1 rounded bg-zinc-50 dark:bg-zinc-700/40 border border-zinc-200 dark:border-zinc-600">
-                      <span className="text-xs text-zinc-500 flex-shrink-0 mt-0.5">{formatRelativeTime(entry.resolved_at, t)}</span>
-                      <span className="text-xs text-zinc-500 line-through leading-snug">{entry.action}</span>
+                    <div key={entry.id} className="flex items-start gap-2 px-2 py-1 rounded bg-zinc-100/60 dark:bg-zinc-700/30 border border-zinc-200 dark:border-zinc-600 opacity-60">
+                      <span className="text-xs text-zinc-400 flex-shrink-0 mt-0.5">{formatRelativeTime(entry.resolved_at, t)}</span>
+                      <span className="text-xs text-zinc-400 line-through leading-snug">{entry.action}</span>
                     </div>
                   ))}
                 </div>
