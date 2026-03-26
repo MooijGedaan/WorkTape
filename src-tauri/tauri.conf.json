@@ -34,7 +34,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/MooijGedaan/WorkTape/releases/latest/download/latest.json"
+        "https://worktape-proxy.daanmooij-385.workers.dev/v1/update/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAzRjI3OEQ4RURFREE4REMKUldUY3FPM3QySGp5QTR3RmxraTluR3F3UFU2aVVVTFBRd2o3UFlYMWlRL1IwVkROWS9lNjhGK2QK"
     }

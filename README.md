@@ -94,6 +94,25 @@ Build the application for production:
 npm run tauri build
 ```
 
+## Releasing
+
+To release a new version, run:
+```bash
+./scripts/set-version.sh
+```
+
+The script will show the current version and present an interactive menu to select the bump type:
+- **Patch** — increments the last number (e.g. `0.1.0` → `0.1.1`)
+- **Minor** — increments the middle number (e.g. `0.1.0` → `0.2.0`)
+- **Major** — increments the first number (e.g. `0.1.0` → `1.0.0`)
+- **Custom** — prompts for a version number manually
+
+It then automatically:
+1. Updates the version in `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`
+2. Commits the changes
+3. Creates a git tag `v<version>`
+4. Pushes the commit and tag to the remote
+
 ## Recommended IDE Setup
 
 - [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
