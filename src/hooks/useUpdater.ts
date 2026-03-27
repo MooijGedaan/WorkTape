@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { check, type Update } from '@tauri-apps/plugin-updater';
 import { getVersion } from '@tauri-apps/api/app';
+import { invoke } from '@tauri-apps/api/core';
 
 interface UpdateState {
   checking: boolean;
@@ -84,6 +85,7 @@ export function useUpdater() {
           setState((s) => ({ ...s, progress: 100 }));
         }
       });
+      await invoke('relaunch_app');
     } catch (e) {
       setState((s) => ({
         ...s,

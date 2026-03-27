@@ -5,6 +5,24 @@ use tauri_plugin_autostart::MacosLauncher;
 mod openai;
 mod prompt;
 
+struct AppBundlePath(Option<std::path::PathBuf>);
+
+#[tauri::command]
+fn relaunch_app(app: tauri::AppHandle, state: tauri::State<'_, AppBundlePath>) -> Result<(), String> {
+    if let Some(bundle_path) = &state.0 {
+        std::process::Command::new("open")
+            .arg("-n")
+            .arg("-a")
+            .arg(bundle_path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        app.exit(0);
+    } else {
+        app.restart();
+    }
+    Ok(())
+}
+
 /// Read the device token from settings, or register a new device if none exists.
 async fn ensure_device_token(pool: &sqlx::SqlitePool) -> Result<String, String> {
     let existing = sqlx::query_as::<_, (String,)>(
@@ -1791,9 +1809,20 @@ pub fn run() {
             is_day_ended,
             generate_grouped_daily_summary,
             generate_weekly_summary,
-            generate_monthly_summary
+            generate_monthly_summary,
+            relaunch_app
         ])
         .setup(|app| {
+            // Capture the .app bundle path at startup (before any update replaces it)
+            let bundle_path = std::env::current_exe()
+                .ok()
+                .and_then(|exe| {
+                    exe.ancestors()
+                        .find(|p| p.extension().is_some_and(|ext| ext == "app"))
+                        .map(|p| p.to_path_buf())
+                });
+            app.manage(AppBundlePath(bundle_path));
+
             // Initialize logging with default INFO level
             env_logger::Builder::from_default_env()
                 .filter_level(log::LevelFilter::Info)
