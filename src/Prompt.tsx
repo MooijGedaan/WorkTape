@@ -78,16 +78,17 @@ function Prompt() {
     loadRecentEntries();
   }, []);
 
-  // Load active sprint tasks on mount
+  // Load active sprint tasks
+  const loadSprintTasks = async () => {
+    try {
+      const tasks = await invoke<SprintTask[]>('get_sprint_tasks');
+      setSprintTasks(tasks.filter(t => t.status !== 'done'));
+    } catch (error) {
+      console.error('Failed to load sprint tasks:', error);
+    }
+  };
+
   useEffect(() => {
-    const loadSprintTasks = async () => {
-      try {
-        const tasks = await invoke<SprintTask[]>('get_sprint_tasks');
-        setSprintTasks(tasks.filter(t => t.status !== 'done'));
-      } catch (error) {
-        console.error('Failed to load sprint tasks:', error);
-      }
-    };
     loadSprintTasks();
   }, []);
 
@@ -300,6 +301,7 @@ function Prompt() {
                 const val = e.target.value;
                 setSelectedTaskId(val === '' ? null : Number(val));
               }}
+              onFocus={loadSprintTasks}
               disabled={isSubmitting}
               className="w-full text-xs rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
