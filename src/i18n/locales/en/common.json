@@ -55,5 +55,7 @@
   "errors": {
     "somethingWentWrong": "Something went wrong",
     "tryAgain": "Try again"
-  }
+  },
+  "updateAvailable": "A new version ({{version}}) is available!",
+  "viewUpdate": "View update →"
 }

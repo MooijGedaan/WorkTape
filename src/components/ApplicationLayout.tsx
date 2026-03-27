@@ -17,6 +17,7 @@ import { Button } from './catalyst/button';
 import { TitleBar } from './TitleBar';
 import { ErrorNotification } from './ErrorNotification';
 import { useNavigation } from '../hooks/useNavigation.tsx';
+import { useUpdater } from '../hooks/useUpdater';
 import {
   HomeIcon,
   DocumentIcon,
@@ -35,6 +36,7 @@ function toLocalDateString(d: Date): string {
 export function ApplicationLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation('common');
   const { currentView, navigate } = useNavigation();
+  const updater = useUpdater();
   const [isDayEnded, setIsDayEnded] = useState(false);
   const [isEndingDay, setIsEndingDay] = useState(false);
   const [showEndDayConfirm, setShowEndDayConfirm] = useState(false);
@@ -43,6 +45,15 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const todayStr = toLocalDateString(new Date());
     invoke<boolean>('is_day_ended', { date: todayStr }).then(setIsDayEnded).catch(console.error);
+  }, []);
+
+  // Check for updates on mount
+  useEffect(() => {
+    // Small delay to not block initial render
+    const timer = setTimeout(() => {
+      updater.checkForUpdates();
+    }, 5000);
+    return () => clearTimeout(timer);
   }, []);
 
   const setDayEnded = useCallback(() => setIsDayEnded(true), []);
@@ -170,6 +181,21 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
     >
       {/* Main Content Area with padding */}
       <div className="flex-1 flex flex-col p-6 min-h-0">
+        {updater.available && updater.version && (
+          <div className="mx-auto max-w-6xl w-full mb-0 px-0">
+            <button
+              onClick={() => { navigate('settings'); }}
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors cursor-pointer mb-4"
+            >
+              <span>
+                {t('updateAvailable', { version: updater.version })}
+              </span>
+              <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                {t('viewUpdate')}
+              </span>
+            </button>
+          </div>
+        )}
         <div className="mx-auto max-w-6xl w-full flex-1 flex flex-col min-h-0">
           {children}
         </div>
