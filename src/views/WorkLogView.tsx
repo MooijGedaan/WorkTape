@@ -421,7 +421,7 @@ export function WorkLogView() {
                             title={isDayEnded ? undefined : t('worklog:list.clickToEdit')}
                             className={[
                               'transition-colors',
-                              !isDayEnded && 'cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:font-medium',
+                              !isDayEnded && 'cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60',
                             ].filter(Boolean).join(' ')}
                           >
                             <td className="border-b border-zinc-950/5 dark:border-white/5 px-4 py-4 text-zinc-500 dark:text-zinc-400 font-medium whitespace-nowrap align-top">
