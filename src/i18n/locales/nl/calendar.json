@@ -26,5 +26,19 @@
   "weekInProgress": "Genereer eerst dagelijkse samenvattingen voor alle dagen in deze week.",
   "monthInProgress": "Genereer eerst weeksamenvattingen voor alle weken in deze maand.",
   "weekStats": "{{days}} dagen, {{entries}} items",
-  "monthStats": "{{weeks}} weken, {{entries}} items"
+  "monthStats": "{{weeks}} weken, {{entries}} items",
+  "tabs": {
+    "days": "Dagen",
+    "weeks": "Weken",
+    "months": "Maanden"
+  },
+  "navigation": {
+    "today": "Vandaag",
+    "generateAll": "Alles genereren"
+  },
+  "collapsedWeek": "{{days}} dagen · {{entries}} items",
+  "collapsedMonth": "{{weeks}} weken · {{entries}} items",
+  "generatingAll": "Genereren…",
+  "generateAllWeeks": "✦ Genereer alle weeksamenvattingen",
+  "generateAllMonths": "✦ Genereer alle maandsamenvattingen"
 }

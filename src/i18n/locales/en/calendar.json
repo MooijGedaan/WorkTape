@@ -26,5 +26,19 @@
   "weekInProgress": "Generate daily summaries for all days in this week first.",
   "monthInProgress": "Generate weekly summaries for all weeks in this month first.",
   "weekStats": "{{days}} days, {{entries}} entries",
-  "monthStats": "{{weeks}} weeks, {{entries}} entries"
+  "monthStats": "{{weeks}} weeks, {{entries}} entries",
+  "tabs": {
+    "days": "Days",
+    "weeks": "Weeks",
+    "months": "Months"
+  },
+  "navigation": {
+    "today": "Today",
+    "generateAll": "Generate all"
+  },
+  "collapsedWeek": "{{days}} days · {{entries}} entries",
+  "collapsedMonth": "{{weeks}} weeks · {{entries}} entries",
+  "generatingAll": "Generating…",
+  "generateAllWeeks": "✦ Generate all week summaries",
+  "generateAllMonths": "✦ Generate all month summaries"
 }
