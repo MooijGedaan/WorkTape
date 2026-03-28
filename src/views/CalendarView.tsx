@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useTauriEvent } from '../hooks/useTauriEvent';
 import { getDb } from '../hooks/useDatabase';
@@ -10,6 +9,8 @@ import { useTooltipHints, type HintId } from '../hooks/useTooltipHints';
 import { TooltipHint } from '../components/TooltipHint';
 import { HINT_DEFINITIONS } from '../components/hints/hintDefinitions';
 import { useNavigation } from '../hooks/useNavigation';
+
+// ─── Types & Utilities (unchanged) ──────────────────────────────────────────
 
 interface SummaryItem {
   label: string;
@@ -145,97 +146,98 @@ function formatDayHeader(dateStr: string, locale: string): { dayNum: string; day
   };
 }
 
-function DayCard({ day, onGenerate, onLabelClick }: { day: DayData; onGenerate: (date: string) => Promise<void>; onLabelClick: (taskId: number) => void }) {
-  const { t, i18n } = useTranslation('calendar');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { dayNum, dayName } = formatDayHeader(day.date, i18n.language);
+type TabId = 'days' | 'weeks' | 'months';
 
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    setError(null);
-    try {
-      await onGenerate(day.date);
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setIsGenerating(false);
-    }
+/** Build a placeholder WeekGroup for a given ISO week number when no real data exists. */
+function buildPlaceholderWeek(year: number, weekNum: number, locale: string, weekWord: string): WeekGroup {
+  // Find the Monday of this ISO week
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayOfWeek = jan4.getUTCDay() || 7;
+  const monday = new Date(jan4);
+  monday.setUTCDate(jan4.getUTCDate() - dayOfWeek + 1 + (weekNum - 1) * 7);
+
+  const todayStr = toLocalDateString(new Date());
+  const days: DayData[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setUTCDate(monday.getUTCDate() + i);
+    const dateStr = toLocalDateString(d);
+    days.push({
+      date: dateStr,
+      summary: null,
+      entryCount: 0,
+      isToday: dateStr === todayStr,
+      isDayEnded: false,
+    });
+  }
+
+  const monthStr = monday.toLocaleString(locale, { month: 'long' });
+  return {
+    label: `${weekWord} ${weekNum} · ${monthStr} ${monday.getFullYear()}`,
+    year,
+    weekNum,
+    month: monday.getMonth(),
+    days: days.sort((a, b) => b.date.localeCompare(a.date)),
+    weeklySummary: null,
   };
-
-  const canGenerate = !day.isToday || day.isDayEnded;
-
-  return (
-    <div className={`w-full border rounded-xl bg-white dark:bg-zinc-900 overflow-hidden border-amber-500 border-zinc-200 dark:border-zinc-700`}>
-      {/* Day header */}
-      <div className="flex items-baseline gap-3 px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
-        <span className="text-3xl font-bold text-zinc-900 dark:text-white leading-none">{dayNum}</span>
-        <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{dayName}</span>
-        {day.isToday && day.isDayEnded && (
-          <span className="ml-2 inline-flex items-center rounded-md bg-green-50 dark:bg-green-950/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300 ring-1 ring-inset ring-green-700/10 dark:ring-green-300/10">
-            {t('dayEnded')}
-          </span>
-        )}
-        {day.isToday && !day.isDayEnded && (
-          <span className="ml-2 inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-700/10 dark:ring-amber-300/10">
-            {t('today')}
-          </span>
-        )}
-        {day.entryCount > 0 && (
-          <span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">
-            {t('entryCount', { count: day.entryCount })}
-          </span>
-        )}
-      </div>
-
-      {/* Body */}
-      <div className="px-5 py-4">
-        {day.entryCount === 0 ? (
-          <p className="text-sm text-zinc-400 dark:text-zinc-600 italic">{t('noEntries')}</p>
-        ) : day.summary ? (
-          // AI summary available — show it
-          <div className="flex flex-col gap-3">
-            <SummaryItems
-              items={parseSummary(day.summary) ?? [{ label: '', summary: day.summary }]}
-              onLabelClick={onLabelClick}
-            />
-            {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
-            {canGenerate && (
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="self-start text-xs italic text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isGenerating ? t('regenerating') : t('regenerateSummary')}
-              </button>
-            )}
-          </div>
-        ) : (
-          // No summary yet
-          <div className="flex flex-col gap-3">
-            {canGenerate ? (
-              <>
-                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">{t('noSummaryYet')}</p>
-                {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
-                <button
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className="self-start text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isGenerating ? t('generating') : t('generateSummary')}
-                </button>
-              </>
-            ) : (
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('dayInProgress')}</p>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
-// ─── Summary Items Renderer (shared) ─────────────────────────────────────────
+/** Generate week groups for a given month, filling in from existing data or creating empty placeholders. */
+function getWeeksForMonth(
+  allWeeks: WeekGroup[],
+  year: number,
+  month: number, // 0-based
+  locale: string,
+  weekWord: string,
+): WeekGroup[] {
+  // First try to find existing week groups for this month
+  const existing = allWeeks.filter(w => w.month === month && w.year === year);
+  if (existing.length > 0) return existing;
+
+  // No data — build placeholder week groups for every day in the month
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysByWeek = new Map<string, DayData[]>();
+  const weekMeta = new Map<string, { weekNum: number; monthStr: string; year: number }>();
+  const todayStr = toLocalDateString(new Date());
+
+  for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+    const dateStr = toLocalDateString(d);
+    const weekNum = getWeekNumber(d);
+    const key = `${d.getFullYear()}-W${weekNum}`;
+    if (!daysByWeek.has(key)) {
+      daysByWeek.set(key, []);
+      weekMeta.set(key, {
+        weekNum,
+        monthStr: d.toLocaleString(locale, { month: 'long' }),
+        year: d.getFullYear(),
+      });
+    }
+    daysByWeek.get(key)!.push({
+      date: dateStr,
+      summary: null,
+      entryCount: 0,
+      isToday: dateStr === todayStr,
+      isDayEnded: false,
+    });
+  }
+
+  const groups: WeekGroup[] = [];
+  for (const [key, days] of daysByWeek) {
+    const meta = weekMeta.get(key)!;
+    groups.push({
+      label: `${weekWord} ${meta.weekNum} · ${meta.monthStr} ${meta.year}`,
+      year: meta.year,
+      weekNum: meta.weekNum,
+      month,
+      days: days.sort((a, b) => b.date.localeCompare(a.date)),
+      weeklySummary: null,
+    });
+  }
+  return groups;
+}
+
+// ─── Shared Sub-Components ──────────────────────────────────────────────────
 
 function SummaryItems({ items, onLabelClick }: { items: SummaryItem[]; onLabelClick: (taskId: number) => void }) {
   return (
@@ -266,16 +268,104 @@ function SummaryItems({ items, onLabelClick }: { items: SummaryItem[]; onLabelCl
   );
 }
 
-// ─── WeekSummaryCard ─────────────────────────────────────────────────────────
+function DayCard({ day, onGenerate, onLabelClick }: { day: DayData; onGenerate: (date: string) => Promise<void>; onLabelClick: (taskId: number) => void }) {
+  const { t, i18n } = useTranslation('calendar');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { dayNum, dayName } = formatDayHeader(day.date, i18n.language);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setError(null);
+    try {
+      await onGenerate(day.date);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const canGenerate = !day.isToday || day.isDayEnded;
+
+  return (
+    <div className={`w-full border rounded-xl bg-white dark:bg-zinc-900 overflow-hidden border-zinc-200 dark:border-zinc-700`}>
+      {/* Day header */}
+      <div className="flex items-baseline gap-3 px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
+        <span className="text-3xl font-bold text-zinc-900 dark:text-white leading-none">{dayNum}</span>
+        <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{dayName}</span>
+        {day.isToday && day.isDayEnded && (
+          <span className="ml-2 inline-flex items-center rounded-md bg-green-50 dark:bg-green-950/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300 ring-1 ring-inset ring-green-700/10 dark:ring-green-300/10">
+            {t('dayEnded')}
+          </span>
+        )}
+        {day.isToday && !day.isDayEnded && (
+          <span className="ml-2 inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-700/10 dark:ring-amber-300/10">
+            {t('today')}
+          </span>
+        )}
+        {day.entryCount > 0 && (
+          <span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">
+            {t('entryCount', { count: day.entryCount })}
+          </span>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="px-5 py-4">
+        {day.entryCount === 0 ? (
+          <p className="text-sm text-zinc-400 dark:text-zinc-600 italic">{t('noEntries')}</p>
+        ) : day.summary ? (
+          <div className="flex flex-col gap-3">
+            <SummaryItems
+              items={parseSummary(day.summary) ?? [{ label: '', summary: day.summary }]}
+              onLabelClick={onLabelClick}
+            />
+            {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
+            {canGenerate && (
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                className="self-start text-xs italic text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isGenerating ? t('regenerating') : t('regenerateSummary')}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {canGenerate ? (
+              <>
+                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">{t('noSummaryYet')}</p>
+                {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  className="self-start text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isGenerating ? t('generating') : t('generateSummary')}
+                </button>
+              </>
+            ) : (
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('dayInProgress')}</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function WeekSummaryCard({
   week,
   onGenerate,
   onLabelClick,
+  showLabel,
 }: {
   week: WeekGroup;
   onGenerate: (week: WeekGroup) => Promise<void>;
   onLabelClick: (taskId: number) => void;
+  showLabel?: boolean;
 }) {
   const { t } = useTranslation('calendar');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -300,15 +390,41 @@ function WeekSummaryCard({
     }
   };
 
-  if (totalEntries === 0) return null;
-
   const items = parseSummary(week.weeklySummary);
 
+  // Compact ungenerated state for the Weeks tab
+  if (showLabel && !items) {
+    return (
+      <div className="w-full border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 overflow-hidden">
+        <div className="px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{week.label}</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+              {t('weekStats', { days: daysWithEntries, entries: totalEntries })}
+            </span>
+          </div>
+          {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+          {canGenerate ? (
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isGenerating ? t('generatingWeekSummary') : t('generateWeekSummary')}
+            </button>
+          ) : (
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('weekInProgress')}</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full border-l-2 border-l-amber-400 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 overflow-hidden">
+    <div className="w-full border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 overflow-hidden">
       <div className="px-5 py-3 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
-        <span className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          {t('weekSummary')}
+        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+          {showLabel ? week.label : t('weekSummary')}
         </span>
         <span className="text-xs text-zinc-400 dark:text-zinc-500">
           {t('weekStats', { days: daysWithEntries, entries: totalEntries })}
@@ -348,8 +464,6 @@ function WeekSummaryCard({
   );
 }
 
-// ─── MonthSummaryCard ────────────────────────────────────────────────────────
-
 function MonthSummaryCard({
   monthData,
   onGenerate,
@@ -365,6 +479,7 @@ function MonthSummaryCard({
 
   const now = new Date();
   const isCurrentMonth = monthData.year === now.getFullYear() && monthData.month === now.getMonth();
+  const canGenerate = !isCurrentMonth && monthData.totalEntries > 0;
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -378,50 +493,338 @@ function MonthSummaryCard({
     }
   };
 
-  if (monthData.totalEntries === 0) return null;
-
   const items = parseSummary(monthData.summary);
 
+  // Compact ungenerated state
+  if (!items) {
+    return (
+      <div className="w-full border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 overflow-hidden">
+        <div className="px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{monthData.label}</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+              {t('monthStats', { weeks: monthData.weekCount, entries: monthData.totalEntries })}
+            </span>
+          </div>
+          {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}
+          {canGenerate ? (
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isGenerating ? t('generatingMonthSummary') : t('generateMonthSummary')}
+            </button>
+          ) : isCurrentMonth ? (
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('monthInProgress')}</span>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full border-l-2 border-l-amber-500 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 overflow-hidden">
-      <div className="px-5 py-3 flex items-center justify-between border-b border-amber-100 dark:border-amber-900/30">
-        <span className="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-          {monthData.label} — {t('monthSummary')}
+    <div className="w-full border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 overflow-hidden">
+      <div className="px-5 py-3 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
+        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+          {monthData.label}
         </span>
         <span className="text-xs text-zinc-400 dark:text-zinc-500">
           {t('monthStats', { weeks: monthData.weekCount, entries: monthData.totalEntries })}
         </span>
       </div>
       <div className="px-5 py-4">
-        {items ? (
-          <div className="flex flex-col gap-3">
-            <SummaryItems items={items} onLabelClick={onLabelClick} />
-            {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
-            {!isCurrentMonth && (
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="self-start text-xs italic text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isGenerating ? t('generatingMonthSummary') : t('regenerateMonthSummary')}
-              </button>
-            )}
-          </div>
-        ) : !isCurrentMonth ? (
-          <div className="flex flex-col gap-2">
-            {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
+        <div className="flex flex-col gap-3">
+          <SummaryItems items={items} onLabelClick={onLabelClick} />
+          {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
+          {canGenerate && (
             <button
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="self-start text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="self-start text-xs italic text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isGenerating ? t('generatingMonthSummary') : t('generateMonthSummary')}
+              {isGenerating ? t('generatingMonthSummary') : t('regenerateMonthSummary')}
             </button>
-          </div>
-        ) : (
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('monthInProgress')}</p>
-        )}
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Tab Components ─────────────────────────────────────────────────────────
+
+function CalendarTabs({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (tab: TabId) => void }) {
+  const { t } = useTranslation('calendar');
+  const tabs: { id: TabId; label: string }[] = [
+    { id: 'days', label: t('tabs.days') },
+    { id: 'weeks', label: t('tabs.weeks') },
+    { id: 'months', label: t('tabs.months') },
+  ];
+
+  return (
+    <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+      {tabs.map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => onTabChange(tab.id)}
+          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            activeTab === tab.id
+              ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CalendarNavBar({
+  activeTab,
+  navWeek,
+  navYear,
+  navMonth,
+  disableNext,
+  onPrev,
+  onNext,
+  onToday,
+}: {
+  activeTab: TabId;
+  navWeek: number;
+  navYear: number;
+  navMonth: number; // 0-based, used to derive the month label for the week display
+  disableNext: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
+}) {
+  const { t, i18n } = useTranslation('calendar');
+
+  const label = useMemo(() => {
+    if (activeTab === 'days') {
+      // "Week 13 · March 2026"
+      const d = new Date(navYear, navMonth, 1);
+      const monthStr = d.toLocaleString(i18n.language, { month: 'long' });
+      return `${t('week')} ${navWeek} · ${monthStr} ${navYear}`;
+    }
+    if (activeTab === 'weeks') {
+      const d = new Date(navYear, navMonth, 1);
+      const s = d.toLocaleString(i18n.language, { month: 'long', year: 'numeric' });
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+    // months tab — just the year
+    return String(navYear);
+  }, [activeTab, navWeek, navYear, navMonth, i18n.language, t]);
+
+  const ariaLabel = activeTab === 'days' ? 'week' : activeTab === 'weeks' ? 'month' : 'year';
+
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        onClick={onPrev}
+        className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition-colors"
+        aria-label={`Previous ${ariaLabel}`}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M9.78 12.78a.75.75 0 0 1-1.06 0L4.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L6.06 8l3.72 3.72a.75.75 0 0 1 0 1.06Z" /></svg>
+      </button>
+      <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 min-w-[140px] text-center">
+        {label}
+      </span>
+      <button
+        onClick={onNext}
+        disabled={disableNext}
+        className={`p-1 rounded transition-colors ${disableNext ? 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400'}`}
+        aria-label={`Next ${ariaLabel}`}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z" /></svg>
+      </button>
+      <button
+        onClick={onToday}
+        className="ml-2 px-2.5 py-1 text-xs font-medium rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+      >
+        {t('navigation.today')}
+      </button>
+    </div>
+  );
+}
+
+// ─── DaysTab ────────────────────────────────────────────────────────────────
+
+function DaysTab({
+  weeks,
+  navWeek,
+  navYear,
+  onGenerateDay,
+  onLabelClick,
+}: {
+  weeks: WeekGroup[];
+  navWeek: number;
+  navYear: number;
+  onGenerateDay: (date: string) => Promise<void>;
+  onLabelClick: (taskId: number) => void;
+}) {
+  const { t, i18n } = useTranslation('calendar');
+
+  // Find the selected week, or build a placeholder
+  const existing = weeks.find(w => w.weekNum === navWeek && w.year === navYear);
+  const weekGroup = existing ?? buildPlaceholderWeek(navYear, navWeek, i18n.language, t('week'));
+
+  return (
+    <div className="space-y-3">
+      {weekGroup.days.map((day) => (
+        <DayCard key={day.date} day={day} onGenerate={onGenerateDay} onLabelClick={onLabelClick} />
+      ))}
+    </div>
+  );
+}
+
+// ─── WeeksTab ───────────────────────────────────────────────────────────────
+
+function WeeksTab({
+  weeks,
+  activeMonth,
+  activeYear,
+  onGenerateWeek,
+  onGenerateAllWeeks,
+  onLabelClick,
+}: {
+  weeks: WeekGroup[];
+  activeMonth: number;
+  activeYear: number;
+  onGenerateWeek: (week: WeekGroup) => Promise<void>;
+  onGenerateAllWeeks: () => Promise<void>;
+  onLabelClick: (taskId: number) => void;
+}) {
+  const { t, i18n } = useTranslation('calendar');
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+
+  const filtered = getWeeksForMonth(weeks, activeYear, activeMonth, i18n.language, t('week'));
+
+  const eligibleForGeneration = filtered.filter(w => {
+    const allDaysHaveSummaries = w.days.every(d => d.entryCount === 0 || d.summary !== null);
+    const isCurrentWeek = w.days.some(d => d.isToday && !d.isDayEnded);
+    const daysWithEntries = w.days.filter(d => d.entryCount > 0).length;
+    return !isCurrentWeek && allDaysHaveSummaries && daysWithEntries > 0 && !w.weeklySummary;
+  });
+
+  const handleGenerateAll = async () => {
+    setIsGeneratingAll(true);
+    try {
+      await onGenerateAllWeeks();
+    } finally {
+      setIsGeneratingAll(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {eligibleForGeneration.length > 1 && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleGenerateAll}
+            disabled={isGeneratingAll}
+            className="text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isGeneratingAll ? t('generatingAll') : t('generateAllWeeks')}
+          </button>
+        </div>
+      )}
+      {filtered.map(week => (
+        <WeekSummaryCard
+          key={week.label}
+          week={week}
+          onGenerate={onGenerateWeek}
+          onLabelClick={onLabelClick}
+          showLabel
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── MonthsTab ──────────────────────────────────────────────────────────────
+
+function MonthsTab({
+  months,
+  navYear,
+  onGenerateMonth,
+  onGenerateAllMonths,
+  onLabelClick,
+}: {
+  months: Map<string, MonthData>;
+  navYear: number;
+  onGenerateMonth: (monthData: MonthData) => Promise<void>;
+  onGenerateAllMonths: () => Promise<void>;
+  onLabelClick: (taskId: number) => void;
+}) {
+  const { t, i18n } = useTranslation('calendar');
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+
+  // Build all 12 months for the selected year
+  const yearMonths = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const result: MonthData[] = [];
+    // Only show up to current month for current year, all 12 for past years
+    const maxMonth = navYear === currentYear ? currentMonth : 11;
+    for (let m = maxMonth; m >= 0; m--) {
+      const key = `${navYear}-${m}`;
+      if (months.has(key)) {
+        result.push(months.get(key)!);
+      } else {
+        const d = new Date(navYear, m, 1);
+        const label = d.toLocaleString(i18n.language, { month: 'long', year: 'numeric' });
+        result.push({
+          year: navYear,
+          month: m,
+          label: label.charAt(0).toUpperCase() + label.slice(1),
+          summary: null,
+          weekCount: 0,
+          totalEntries: 0,
+        });
+      }
+    }
+    return result;
+  }, [months, navYear, i18n.language]);
+
+  const now = new Date();
+  const eligibleForGeneration = yearMonths.filter(m =>
+    m.totalEntries > 0 && !m.summary && !(m.year === now.getFullYear() && m.month === now.getMonth())
+  );
+
+  const handleGenerateAll = async () => {
+    setIsGeneratingAll(true);
+    try {
+      await onGenerateAllMonths();
+    } finally {
+      setIsGeneratingAll(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {eligibleForGeneration.length > 1 && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleGenerateAll}
+            disabled={isGeneratingAll}
+            className="text-sm italic text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isGeneratingAll ? t('generatingAll') : t('generateAllMonths')}
+          </button>
+        </div>
+      )}
+      {yearMonths.map(monthData => (
+        <MonthSummaryCard
+          key={`${monthData.year}-${monthData.month}`}
+          monthData={monthData}
+          onGenerate={onGenerateMonth}
+          onLabelClick={onLabelClick}
+        />
+      ))}
     </div>
   );
 }
@@ -436,6 +839,79 @@ export function CalendarView() {
   const [weeks, setWeeks] = useState<WeekGroup[]>([]);
   const [months, setMonths] = useState<Map<string, MonthData>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabId>('days');
+
+  // Navigation state
+  const now = new Date();
+  const [navWeek, setNavWeek] = useState(() => getWeekNumber(now));
+  const [navMonth, setNavMonth] = useState(now.getMonth());
+  const [navYear, setNavYear] = useState(now.getFullYear());
+
+  // Derive the month that the current navWeek falls in (for the nav bar label)
+  const navWeekMonth = useMemo(() => {
+    const jan4 = new Date(Date.UTC(navYear, 0, 4));
+    const dayOfWeek = jan4.getUTCDay() || 7;
+    const monday = new Date(jan4);
+    monday.setUTCDate(jan4.getUTCDate() - dayOfWeek + 1 + (navWeek - 1) * 7);
+    return monday.getMonth();
+  }, [navYear, navWeek]);
+
+  const handlePrev = useCallback(() => {
+    if (activeTab === 'days') {
+      // Previous week
+      if (navWeek <= 1) {
+        const prevYear = navYear - 1;
+        const lastWeek = getWeekNumber(new Date(prevYear, 11, 28));
+        setNavWeek(lastWeek);
+        setNavYear(prevYear);
+      } else {
+        setNavWeek(w => w - 1);
+      }
+    } else if (activeTab === 'weeks') {
+      // Previous month
+      if (navMonth === 0) { setNavYear(y => y - 1); setNavMonth(11); }
+      else setNavMonth(m => m - 1);
+    } else {
+      // Previous year
+      setNavYear(y => y - 1);
+    }
+  }, [activeTab, navWeek, navYear, navMonth]);
+
+  // Whether the nav is already at the current period (can't go forward)
+  const isAtCurrentPeriod = useMemo(() => {
+    const today = new Date();
+    if (activeTab === 'days') return navWeek === getWeekNumber(today) && navYear === today.getFullYear();
+    if (activeTab === 'weeks') return navMonth === today.getMonth() && navYear === today.getFullYear();
+    return navYear === today.getFullYear();
+  }, [activeTab, navWeek, navMonth, navYear]);
+
+  const handleNext = useCallback(() => {
+    if (isAtCurrentPeriod) return;
+    if (activeTab === 'days') {
+      // Next week
+      const lastWeek = getWeekNumber(new Date(navYear, 11, 28));
+      if (navWeek >= lastWeek) {
+        setNavWeek(1);
+        setNavYear(y => y + 1);
+      } else {
+        setNavWeek(w => w + 1);
+      }
+    } else if (activeTab === 'weeks') {
+      // Next month
+      if (navMonth === 11) { setNavYear(y => y + 1); setNavMonth(0); }
+      else setNavMonth(m => m + 1);
+    } else {
+      // Next year
+      setNavYear(y => y + 1);
+    }
+  }, [activeTab, navWeek, navYear, navMonth, isAtCurrentPeriod]);
+
+  const handleToday = useCallback(() => {
+    const today = new Date();
+    setNavYear(today.getFullYear());
+    setNavMonth(today.getMonth());
+    setNavWeek(getWeekNumber(today));
+  }, []);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -599,10 +1075,10 @@ export function CalendarView() {
       language: i18n.language,
     });
 
-    const now = new Date().toISOString();
+    const nowStr = new Date().toISOString();
     await database.execute(
       "INSERT OR REPLACE INTO ai_summaries (date, summary, created_at, updated_at) VALUES (?, ?, COALESCE((SELECT created_at FROM ai_summaries WHERE date = ?), ?), ?)",
-      [date, generatedSummary, date, now, now]
+      [date, generatedSummary, date, nowStr, nowStr]
     );
 
     // Update only the affected day in state — no full reload
@@ -637,10 +1113,10 @@ export function CalendarView() {
     const labelTaskMap = buildLabelTaskMap(dailySummaries.map(([, json]) => json));
     const enrichedSummary = injectTaskIds(generatedSummary, labelTaskMap);
 
-    const now = new Date().toISOString();
+    const nowStr = new Date().toISOString();
     await database.execute(
       "INSERT OR REPLACE INTO ai_weekly_summaries (year, week, summary, created_at, updated_at) VALUES (?, ?, ?, COALESCE((SELECT created_at FROM ai_weekly_summaries WHERE year = ? AND week = ?), ?), ?)",
-      [week.year, week.weekNum, enrichedSummary, week.year, week.weekNum, now, now]
+      [week.year, week.weekNum, enrichedSummary, week.year, week.weekNum, nowStr, nowStr]
     );
 
     // Update state
@@ -653,7 +1129,7 @@ export function CalendarView() {
 
   const handleGenerateMonthSummary = useCallback(async (monthData: MonthData) => {
     const database = await getDb();
-    // Collect weekly summaries for this month
+    // Collect weekly summaries for this month (use whatever is available)
     const weeklySummaries: [string, string][] = [];
     for (const week of weeks) {
       if (week.month === monthData.month && week.year === monthData.year && week.weeklySummary) {
@@ -661,8 +1137,43 @@ export function CalendarView() {
       }
     }
 
+    // Fall back to daily summaries if no weekly summaries exist yet
     if (weeklySummaries.length === 0) {
-      throw new Error(t('calendar:monthInProgress'));
+      const dailySummaries: [string, string][] = [];
+      for (const week of weeks) {
+        if (week.month === monthData.month && week.year === monthData.year) {
+          for (const day of week.days) {
+            if (day.summary && day.entryCount > 0) {
+              dailySummaries.push([day.date, day.summary]);
+            }
+          }
+        }
+      }
+      if (dailySummaries.length === 0) {
+        throw new Error(t('calendar:noEntriesThrown'));
+      }
+      // Generate via weekly summary endpoint using daily summaries as input
+      const generatedSummary = await invoke<string>('generate_monthly_summary', {
+        weeklySummaries: dailySummaries,
+        monthLabel: monthData.label,
+        language: i18n.language,
+      });
+      const labelTaskMap = buildLabelTaskMap(dailySummaries.map(([, json]) => json));
+      const enrichedSummary = injectTaskIds(generatedSummary, labelTaskMap);
+      const nowStr = new Date().toISOString();
+      const dbMonth = monthData.month + 1;
+      await database.execute(
+        "INSERT OR REPLACE INTO ai_monthly_summaries (year, month, summary, created_at, updated_at) VALUES (?, ?, ?, COALESCE((SELECT created_at FROM ai_monthly_summaries WHERE year = ? AND month = ?), ?), ?)",
+        [monthData.year, dbMonth, enrichedSummary, monthData.year, dbMonth, nowStr, nowStr]
+      );
+      setMonths(prev => {
+        const next = new Map(prev);
+        const key = `${monthData.year}-${monthData.month}`;
+        const existing = next.get(key);
+        if (existing) next.set(key, { ...existing, summary: enrichedSummary });
+        return next;
+      });
+      return;
     }
 
     const generatedSummary = await invoke<string>('generate_monthly_summary', {
@@ -674,11 +1185,11 @@ export function CalendarView() {
     const labelTaskMap = buildLabelTaskMap(weeklySummaries.map(([, json]) => json));
     const enrichedSummary = injectTaskIds(generatedSummary, labelTaskMap);
 
-    const now = new Date().toISOString();
+    const nowStr = new Date().toISOString();
     const dbMonth = monthData.month + 1; // Store as 1-based
     await database.execute(
       "INSERT OR REPLACE INTO ai_monthly_summaries (year, month, summary, created_at, updated_at) VALUES (?, ?, ?, COALESCE((SELECT created_at FROM ai_monthly_summaries WHERE year = ? AND month = ?), ?), ?)",
-      [monthData.year, dbMonth, enrichedSummary, monthData.year, dbMonth, now, now]
+      [monthData.year, dbMonth, enrichedSummary, monthData.year, dbMonth, nowStr, nowStr]
     );
 
     // Update state
@@ -693,10 +1204,31 @@ export function CalendarView() {
     });
   }, [i18n.language, t, weeks]);
 
-  const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
+  // Generate all eligible week summaries for the active month sequentially
+  const handleGenerateAllWeeks = useCallback(async () => {
+    const filtered = weeks.filter(w => w.month === navMonth && w.year === navYear);
+    for (const week of filtered) {
+      const allDaysHaveSummaries = week.days.every(d => d.entryCount === 0 || d.summary !== null);
+      const isCurrentWeek = week.days.some(d => d.isToday && !d.isDayEnded);
+      const daysWithEntries = week.days.filter(d => d.entryCount > 0).length;
+      if (!isCurrentWeek && allDaysHaveSummaries && daysWithEntries > 0 && !week.weeklySummary) {
+        await handleGenerateWeekSummary(week);
+      }
+    }
+  }, [weeks, navMonth, navYear, handleGenerateWeekSummary]);
 
-  // Determine month boundaries for rendering
-  const getMonthKey = (week: WeekGroup) => `${week.year}-${week.month}`;
+  // Generate all eligible month summaries sequentially
+  const handleGenerateAllMonths = useCallback(async () => {
+    const nowDate = new Date();
+    const sortedMonths = Array.from(months.values())
+      .filter(m => m.totalEntries > 0 && !m.summary && !(m.year === nowDate.getFullYear() && m.month === nowDate.getMonth()))
+      .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
+    for (const monthData of sortedMonths) {
+      await handleGenerateMonthSummary(monthData);
+    }
+  }, [months, handleGenerateMonthSummary]);
+
+  const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
 
   return (
     <>
@@ -712,9 +1244,24 @@ export function CalendarView() {
       />
     )}
     <div className="flex flex-col h-full overflow-hidden w-full">
-      <div className="flex-shrink-0 mb-6">
+      <div className="flex-shrink-0 mb-4">
         <Heading>{t('calendar:title')}</Heading>
         <Text className="mt-1">{t('calendar:subtitle')}</Text>
+      </div>
+
+      {/* Tabs + Nav Bar */}
+      <div className="flex-shrink-0 mb-4 flex flex-wrap items-center justify-between gap-3">
+        <CalendarTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        <CalendarNavBar
+          activeTab={activeTab}
+          navWeek={navWeek}
+          navYear={navYear}
+          navMonth={activeTab === 'days' ? navWeekMonth : navMonth}
+          disableNext={isAtCurrentPeriod}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onToday={handleToday}
+        />
       </div>
 
       {isLoading ? (
@@ -722,58 +1269,35 @@ export function CalendarView() {
           <Text className="text-zinc-400 italic">{t('calendar:loading')}</Text>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-8 pr-1">
-          {weeks.map((week, idx) => {
-            const monthKey = getMonthKey(week);
-            const prevMonthKey = idx > 0 ? getMonthKey(weeks[idx - 1]) : null;
-            const showMonthCard = monthKey !== prevMonthKey;
-            const monthData = months.get(monthKey);
-
-            return (
-              <section key={week.label}>
-                {/* Month summary card at month boundary */}
-                {showMonthCard && monthData && (
-                  <div className="mb-6">
-                    <MonthSummaryCard
-                      monthData={monthData}
-                      onGenerate={handleGenerateMonthSummary}
-                      onLabelClick={navigateToTask}
-                    />
-                  </div>
-                )}
-
-                <div className="text-xs font-semibold uppercase tracking-widest text-amber-600/70 dark:text-amber-400/60 mb-3 px-1">
-                  {week.label}
-                </div>
-
-                {/* Week summary card */}
-                <div className="mb-3">
-                  <WeekSummaryCard
-                    week={week}
-                    onGenerate={handleGenerateWeekSummary}
-                    onLabelClick={navigateToTask}
-                  />
-                </div>
-
-                <motion.div
-                  className="space-y-3"
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
-                >
-                  {week.days.map((day) => (
-                    <motion.div
-                      key={day.date}
-                      variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
-                    >
-                      <DayCard day={day} onGenerate={handleGenerate} onLabelClick={navigateToTask} />
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </section>
-            );
-          })}
+        <div className="flex-1 overflow-y-auto pr-1">
+          {activeTab === 'days' && (
+            <DaysTab
+              weeks={weeks}
+              navWeek={navWeek}
+              navYear={navYear}
+              onGenerateDay={handleGenerate}
+              onLabelClick={navigateToTask}
+            />
+          )}
+          {activeTab === 'weeks' && (
+            <WeeksTab
+              weeks={weeks}
+              activeMonth={navMonth}
+              activeYear={navYear}
+              onGenerateWeek={handleGenerateWeekSummary}
+              onGenerateAllWeeks={handleGenerateAllWeeks}
+              onLabelClick={navigateToTask}
+            />
+          )}
+          {activeTab === 'months' && (
+            <MonthsTab
+              months={months}
+              navYear={navYear}
+              onGenerateMonth={handleGenerateMonthSummary}
+              onGenerateAllMonths={handleGenerateAllMonths}
+              onLabelClick={navigateToTask}
+            />
+          )}
         </div>
       )}
     </div>
