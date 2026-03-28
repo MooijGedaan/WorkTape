@@ -1,0 +1,12 @@
+{
+  "title": "Waar werk je aan?",
+  "placeholder": "Beschrijf je huidige taak…",
+  "todayEntries": "Invoer van vandaag",
+  "noEntries": "Nog geen invoer vandaag",
+  "submit": "Opslaan",
+  "submitting": "Opslaan...",
+  "taskLink": {
+    "label": "Koppel aan sprinttaak",
+    "noTask": "Geen taak"
+  }
+}
