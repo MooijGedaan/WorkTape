@@ -4,77 +4,51 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
-# Read current version from package.json
-CURRENT=$(grep -o '"version": "[^"]*"' "$ROOT_DIR/package.json" | head -1 | cut -d'"' -f4)
+# Read current version from the latest git tag (most reliable source)
+LATEST_TAG=$(git -C "$ROOT_DIR" tag -l 'v*' --sort=-v:refname | head -1)
+if [ -n "$LATEST_TAG" ]; then
+  CURRENT="${LATEST_TAG#v}"
+else
+  # Fall back to package.json if no tags exist
+  CURRENT=$(grep -o '"version": "[^"]*"' "$ROOT_DIR/package.json" | head -1 | cut -d'"' -f4)
+fi
 IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT%%-*}"
 
-echo "Current version: $CURRENT"
+echo "Current version: $CURRENT (from ${LATEST_TAG:-package.json})"
 echo ""
 
-# Interactive menu with arrow key selection
-select_option() {
-  local options=("$@")
-  local selected=0
-  local count=${#options[@]}
-
-  # Hide cursor
-  tput civis
-
-  # Print options
-  for i in "${!options[@]}"; do
-    if [ $i -eq $selected ]; then
-      echo "  > ${options[$i]}"
-    else
-      echo "    ${options[$i]}"
-    fi
+# Find next available version (skip existing tags)
+next_available() {
+  local maj=$1 min=$2 pat=$3
+  while git -C "$ROOT_DIR" tag -l "v$maj.$min.$pat" | grep -q .; do
+    ((pat++))
   done
-
-  while true; do
-    # Read a single keypress
-    read -rsn1 key
-    if [[ $key == $'\x1b' ]]; then
-      read -rsn2 key
-      case $key in
-        '[A') # Up arrow
-          ((selected > 0)) && ((selected--))
-          ;;
-        '[B') # Down arrow
-          ((selected < count - 1)) && ((selected++))
-          ;;
-      esac
-      # Redraw
-      tput cuu "$count"
-      for i in "${!options[@]}"; do
-        tput el
-        if [ $i -eq $selected ]; then
-          echo "  > ${options[$i]}"
-        else
-          echo "    ${options[$i]}"
-        fi
-      done
-    elif [[ $key == "" ]]; then
-      # Show cursor
-      tput cnorm
-      return $selected
-    fi
-  done
+  echo "$maj.$min.$pat"
 }
 
-NEXT_PATCH="$MAJOR.$MINOR.$((PATCH + 1))"
-NEXT_MINOR="$MAJOR.$((MINOR + 1)).0"
-NEXT_MAJOR="$((MAJOR + 1)).0.0"
+NEXT_PATCH=$(next_available "$MAJOR" "$MINOR" "$((PATCH + 1))")
+NEXT_MINOR=$(next_available "$MAJOR" "$((MINOR + 1))" 0)
+NEXT_MAJOR=$(next_available "$((MAJOR + 1))" 0 0)
 
 echo "Select version bump:"
-select_option "Patch  → $NEXT_PATCH" "Minor  → $NEXT_MINOR" "Major  → $NEXT_MAJOR" "Custom → enter manually"
-choice=$?
+echo "  1) Patch  → $NEXT_PATCH"
+echo "  2) Minor  → $NEXT_MINOR"
+echo "  3) Major  → $NEXT_MAJOR"
+echo "  4) Custom → enter manually"
+echo ""
+read -rp "Choice [1-4]: " choice
 
 case $choice in
-  0) VERSION="$NEXT_PATCH" ;;
-  1) VERSION="$NEXT_MINOR" ;;
-  2) VERSION="$NEXT_MAJOR" ;;
-  3)
+  1) VERSION="$NEXT_PATCH" ;;
+  2) VERSION="$NEXT_MINOR" ;;
+  3) VERSION="$NEXT_MAJOR" ;;
+  4)
     echo ""
     read -rp "Enter version: " VERSION
+    ;;
+  *)
+    echo "Invalid choice"
+    exit 1
     ;;
 esac
 
@@ -90,9 +64,15 @@ echo "Bumping version: $CURRENT → $VERSION"
 echo ""
 
 # Update version in all files
-sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$ROOT_DIR/package.json"
-sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$ROOT_DIR/src-tauri/tauri.conf.json"
-sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" "$ROOT_DIR/src-tauri/Cargo.toml"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  SED_INPLACE=(sed -i '')
+else
+  SED_INPLACE=(sed -i)
+fi
+
+"${SED_INPLACE[@]}" "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$ROOT_DIR/package.json"
+"${SED_INPLACE[@]}" "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$ROOT_DIR/src-tauri/tauri.conf.json"
+"${SED_INPLACE[@]}" "s/^version = \".*\"/version = \"$VERSION\"/" "$ROOT_DIR/src-tauri/Cargo.toml"
 
 echo "Updated version in:"
 echo "  - package.json"
