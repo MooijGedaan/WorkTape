@@ -76,6 +76,16 @@
     "cleaning": "Cleaning...",
     "cleanupNow": "Cleanup Now"
   },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "description": "Configure global keyboard shortcuts.",
+    "quickEntry": "Quick entry",
+    "change": "Change",
+    "enabled": "Enable global shortcut",
+    "recording": "Press a key combination…",
+    "conflict": "This shortcut conflicts with {{conflict}}",
+    "saved": "Shortcut saved!"
+  },
   "developerTools": {
     "title": "Developer tools",
     "description": "These actions are intended for development and testing only.",

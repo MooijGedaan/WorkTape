@@ -76,6 +76,16 @@
     "cleaning": "Opruimen...",
     "cleanupNow": "Nu opruimen"
   },
+  "shortcuts": {
+    "title": "Sneltoetsen",
+    "description": "Configureer globale sneltoetsen.",
+    "quickEntry": "Snelle invoer",
+    "change": "Wijzigen",
+    "enabled": "Globale sneltoets inschakelen",
+    "recording": "Druk een toetscombinatie in…",
+    "conflict": "Deze sneltoets conflicteert met {{conflict}}",
+    "saved": "Sneltoets opgeslagen!"
+  },
   "developerTools": {
     "title": "Ontwikkelaarstools",
     "description": "Deze acties zijn alleen bedoeld voor ontwikkeling en testen.",

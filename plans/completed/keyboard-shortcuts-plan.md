@@ -256,6 +256,5 @@ Add new translation keys:
 
 ## 8. Open Questions
 
-- Should the quick entry modal work when a Prompt window is already open? (Probably yes — close the prompt and use the modal instead)
-- Should there be a system tray icon that also opens the quick entry? (Nice to have, not in scope)
-- Do we want to support custom shortcuts for other actions in the future (e.g., end day, open sprint board)?
+- Should the quick entry modal work when a Prompt window is already open?
+  Answer: close the prompt and use the modal instead

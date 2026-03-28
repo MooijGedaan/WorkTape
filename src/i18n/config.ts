@@ -13,6 +13,7 @@ import settingsEN from './locales/en/settings.json';
 import sprintboardEN from './locales/en/sprintboard.json';
 import calendarEN from './locales/en/calendar.json';
 import hintsEN from './locales/en/hints.json';
+import quickentryEN from './locales/en/quickentry.json';
 
 import commonNL from './locales/nl/common.json';
 import worklogNL from './locales/nl/worklog.json';
@@ -24,6 +25,7 @@ import settingsNL from './locales/nl/settings.json';
 import sprintboardNL from './locales/nl/sprintboard.json';
 import calendarNL from './locales/nl/calendar.json';
 import hintsNL from './locales/nl/hints.json';
+import quickentryNL from './locales/nl/quickentry.json';
 
 // Define resources
 export const resources = {
@@ -38,6 +40,7 @@ export const resources = {
     sprintboard: sprintboardEN,
     calendar: calendarEN,
     hints: hintsEN,
+    quickentry: quickentryEN,
   },
   nl: {
     common: commonNL,
@@ -50,6 +53,7 @@ export const resources = {
     sprintboard: sprintboardNL,
     calendar: calendarNL,
     hints: hintsNL,
+    quickentry: quickentryNL,
   },
 } as const;
 
@@ -60,7 +64,7 @@ i18n
     resources,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'worklog', 'home', 'export', 'notifications', 'prompt', 'settings', 'sprintboard', 'calendar', 'hints'],
+    ns: ['common', 'worklog', 'home', 'export', 'notifications', 'prompt', 'settings', 'sprintboard', 'calendar', 'hints', 'quickentry'],
 
     detection: {
       order: ['localStorage', 'navigator'],

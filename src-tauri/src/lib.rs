@@ -8,6 +8,145 @@ mod prompt;
 struct AppBundlePath(Option<std::path::PathBuf>);
 
 #[tauri::command]
+async fn get_shortcut_settings(app: tauri::AppHandle) -> Result<(String, bool), String> {
+    use sqlx::Row;
+    let db_path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("worktape.db");
+    let pool = sqlx::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let shortcut: String = sqlx::query("SELECT value FROM settings WHERE key = 'shortcut_quick_entry'")
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| e.to_string())?
+        .map(|row| row.get("value"))
+        .unwrap_or_else(|| "CmdOrCtrl+Shift+W".to_string());
+
+    let enabled: bool = sqlx::query("SELECT value FROM settings WHERE key = 'shortcut_enabled'")
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| e.to_string())?
+        .map(|row| {
+            let val: String = row.get("value");
+            val == "true"
+        })
+        .unwrap_or(true);
+
+    pool.close().await;
+    Ok((shortcut, enabled))
+}
+
+#[tauri::command]
+async fn set_shortcut_settings(app: tauri::AppHandle, shortcut: String, enabled: bool) -> Result<(), String> {
+    let db_path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("worktape.db");
+    let pool = sqlx::SqlitePool::connect(&format!("sqlite:{}", db_path.display()))
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query("UPDATE settings SET value = ? WHERE key = 'shortcut_quick_entry'")
+        .bind(&shortcut)
+        .execute(&pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    sqlx::query("UPDATE settings SET value = ? WHERE key = 'shortcut_enabled'")
+        .bind(if enabled { "true" } else { "false" })
+        .execute(&pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    pool.close().await;
+    Ok(())
+}
+
+#[tauri::command]
+fn show_quick_entry(app: tauri::AppHandle) -> Result<(), String> {
+    show_quick_entry_window(&app).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn close_quick_entry(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("quick-entry") {
+        window.close().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn show_quick_entry_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+    // If already open, just focus it
+    if let Some(existing) = app.get_webview_window("quick-entry") {
+        let _ = existing.set_focus();
+        return Ok(());
+    }
+
+    // Close the prompt window if open (plan says to replace it)
+    prompt::close_prompt_window(app)?;
+
+    // Get primary monitor to center horizontally
+    let monitor = app.primary_monitor()?.ok_or_else(|| std::io::Error::other("No primary monitor found"))?;
+    let monitor_size = monitor.size();
+    let scale_factor = monitor.scale_factor();
+
+    let window_width = 480.0;
+    let window_height = 360.0;
+
+    // Center horizontally, ~30% from top
+    let x = ((monitor_size.width as f64 / scale_factor) - window_width) / 2.0;
+    let y = (monitor_size.height as f64 / scale_factor) * 0.3 - (window_height / 2.0);
+
+    WebviewWindowBuilder::new(
+        app,
+        "quick-entry",
+        WebviewUrl::App("/quick-entry".into())
+    )
+    .title("Quick Entry")
+    .inner_size(window_width, window_height)
+    .position(x, y)
+    .resizable(false)
+    .minimizable(false)
+    .maximizable(false)
+    .decorations(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .visible(true)
+    .build()?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn register_global_shortcut(app: tauri::AppHandle, shortcut: String, enabled: bool) -> Result<(), String> {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+    // Unregister all first
+    let _ = app.global_shortcut().unregister_all();
+
+    if enabled {
+        let parsed: tauri_plugin_global_shortcut::Shortcut = shortcut.parse().map_err(|e| format!("{:?}", e))?;
+        app.global_shortcut().on_shortcut(
+            parsed,
+            move |_app, _shortcut, event| {
+                if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                    let _ = show_quick_entry_window(_app);
+                }
+            },
+        ).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 fn relaunch_app(app: tauri::AppHandle, state: tauri::State<'_, AppBundlePath>) -> Result<(), String> {
     if let Some(bundle_path) = &state.0 {
         std::process::Command::new("open")
@@ -1763,6 +1902,15 @@ pub fn run() {
             ",
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 17,
+            description: "add keyboard shortcut settings",
+            sql: "
+                INSERT OR IGNORE INTO settings (key, value) VALUES ('shortcut_quick_entry', 'CmdOrCtrl+Shift+W');
+                INSERT OR IGNORE INTO settings (key, value) VALUES ('shortcut_enabled', 'true');
+            ",
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -1770,6 +1918,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(
             tauri_plugin_sql::Builder::new()
                 .add_migrations("sqlite:worktape.db", migrations)
@@ -1810,7 +1959,12 @@ pub fn run() {
             generate_grouped_daily_summary,
             generate_weekly_summary,
             generate_monthly_summary,
-            relaunch_app
+            relaunch_app,
+            get_shortcut_settings,
+            set_shortcut_settings,
+            register_global_shortcut,
+            show_quick_entry,
+            close_quick_entry
         ])
         .setup(|app| {
             // Capture the .app bundle path at startup (before any update replaces it)
@@ -1840,10 +1994,37 @@ pub fn run() {
             // Start periodic prompt timer
             prompt::start_prompt_timer(app.handle().clone());
 
+            // Register global shortcut for quick entry
+            {
+                let handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    match get_shortcut_settings(handle.clone()).await {
+                        Ok((shortcut, enabled)) => {
+                            if enabled {
+                                use tauri_plugin_global_shortcut::GlobalShortcutExt;
+                                if let Err(e) = handle.global_shortcut().on_shortcut(
+                                    shortcut.parse::<tauri_plugin_global_shortcut::Shortcut>().unwrap(),
+                                    move |_app, _shortcut, event| {
+                                        if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                                            let _ = show_quick_entry_window(_app);
+                                        }
+                                    },
+                                ) {
+                                    log::error!("Failed to register global shortcut: {}", e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            log::error!("Failed to read shortcut settings: {}", e);
+                        }
+                    }
+                });
+            }
+
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Only prevent close for the main window, let prompt close normally
+            // Only prevent close for the main window, let prompt and quick-entry close normally
             if window.label() == "main" {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     let _ = window.hide();
