@@ -42,6 +42,10 @@ export function SettingsView() {
   const [isUnendingDay, setIsUnendingDay] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [shortcutKey, setShortcutKey] = useState('CmdOrCtrl+Shift+W');
+  const [shortcutEnabled, setShortcutEnabled] = useState(true);
+  const [isRecordingShortcut, setIsRecordingShortcut] = useState(false);
+  const [shortcutSaveMessage, setShortcutSaveMessage] = useState<string | null>(null);
 
   // Load settings on mount
   useEffect(() => {
@@ -75,6 +79,15 @@ export function SettingsView() {
 
       const retentionDays = await invoke<number>('get_debug_logs_retention_days');
       setDebugLogsRetentionDays(retentionDays);
+
+      // Load shortcut settings
+      try {
+        const [shortcut, enabled] = await invoke<[string, boolean]>('get_shortcut_settings');
+        setShortcutKey(shortcut);
+        setShortcutEnabled(enabled);
+      } catch (e) {
+        console.error('Failed to load shortcut settings:', e);
+      }
 
       // Check if today has been ended
       const today = new Date();
@@ -190,6 +203,64 @@ export function SettingsView() {
     } finally {
       setIsCleaningLogs(false);
     }
+  };
+
+  const formatShortcutDisplay = (accelerator: string) => {
+    const isMac = navigator.platform.includes('Mac');
+    return accelerator
+      .replace('CmdOrCtrl', isMac ? '⌘' : 'Ctrl')
+      .replace('Shift', isMac ? '⇧' : 'Shift')
+      .replace('Alt', isMac ? '⌥' : 'Alt')
+      .replace(/\+/g, ' + ');
+  };
+
+  const handleShortcutRecordKeyDown = (e: React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Ignore lone modifier presses
+    if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
+
+    const parts: string[] = [];
+    if (e.ctrlKey || e.metaKey) parts.push('CmdOrCtrl');
+    if (e.shiftKey) parts.push('Shift');
+    if (e.altKey) parts.push('Alt');
+
+    // Must have at least one modifier
+    if (parts.length === 0) return;
+
+    // Map the key to Tauri accelerator format
+    let key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+    // Map some common keys
+    const keyMap: Record<string, string> = {
+      'ArrowUp': 'Up', 'ArrowDown': 'Down', 'ArrowLeft': 'Left', 'ArrowRight': 'Right',
+      ' ': 'Space', 'Enter': 'Return',
+    };
+    if (keyMap[key]) key = keyMap[key];
+
+    parts.push(key);
+    const newShortcut = parts.join('+');
+
+    setShortcutKey(newShortcut);
+    setIsRecordingShortcut(false);
+    saveShortcutSettings(newShortcut, shortcutEnabled);
+  };
+
+  const saveShortcutSettings = async (shortcut: string, enabled: boolean) => {
+    try {
+      await invoke('set_shortcut_settings', { shortcut, enabled });
+      await invoke('register_global_shortcut', { shortcut, enabled });
+      setShortcutSaveMessage(t('settings:shortcuts.saved'));
+      setTimeout(() => setShortcutSaveMessage(null), 3000);
+    } catch (error) {
+      console.error('Failed to save shortcut settings:', error);
+      setErrorMessage(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const toggleShortcutEnabled = async (enabled: boolean) => {
+    setShortcutEnabled(enabled);
+    await saveShortcutSettings(shortcutKey, enabled);
   };
 
   const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
@@ -338,6 +409,64 @@ export function SettingsView() {
           >
             {isAllDisabled ? t('common:tooltipHints.enableAll') : t('common:tooltipHints.disableAll')}
           </Button>
+        </div>
+
+        {/* Keyboard Shortcuts */}
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
+          <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
+            {t('settings:shortcuts.title')}
+          </h3>
+          <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            {t('settings:shortcuts.description')}
+          </Text>
+
+          <div className="mt-3 flex items-center gap-3">
+            <Text className="text-sm text-zinc-700 dark:text-zinc-300">
+              {t('settings:shortcuts.quickEntry')}
+            </Text>
+            <div className="flex-1" />
+            {isRecordingShortcut ? (
+              <input
+                type="text"
+                readOnly
+                autoFocus
+                placeholder={t('settings:shortcuts.recording')}
+                onKeyDown={handleShortcutRecordKeyDown}
+                onBlur={() => setIsRecordingShortcut(false)}
+                className="text-xs px-3 py-1.5 rounded-md border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/20 text-zinc-700 dark:text-zinc-300 outline-none w-52 text-center animate-pulse"
+              />
+            ) : (
+              <>
+                <span className="text-xs font-mono px-3 py-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                  {formatShortcutDisplay(shortcutKey)}
+                </span>
+                <Button
+                  onClick={() => setIsRecordingShortcut(true)}
+                  color="zinc"
+                  className="text-xs"
+                >
+                  {t('settings:shortcuts.change')}
+                </Button>
+              </>
+            )}
+          </div>
+
+          <div className="mt-3 flex items-center gap-3">
+            <Switch
+              checked={shortcutEnabled}
+              onChange={toggleShortcutEnabled}
+              disabled={isLoading}
+            />
+            <Text className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              {t('settings:shortcuts.enabled')}
+            </Text>
+          </div>
+
+          {shortcutSaveMessage && (
+            <Text className="mt-2 text-sm text-green-600 dark:text-green-400">
+              {shortcutSaveMessage}
+            </Text>
+          )}
         </div>
 
         {/* Software Updates */}

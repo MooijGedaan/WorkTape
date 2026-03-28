@@ -1,0 +1,12 @@
+{
+  "title": "What are you working on?",
+  "placeholder": "Describe your current task…",
+  "todayEntries": "Today's entries",
+  "noEntries": "No entries yet today",
+  "submit": "Submit",
+  "submitting": "Saving...",
+  "taskLink": {
+    "label": "Link to sprint task",
+    "noTask": "No task"
+  }
+}
