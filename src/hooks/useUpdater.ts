@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { check, type Update } from '@tauri-apps/plugin-updater';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
+import { getDb } from './useDatabase';
 
 interface UpdateState {
   checking: boolean;
@@ -34,7 +35,15 @@ export function useUpdater() {
   const checkForUpdates = useCallback(async () => {
     setState((s) => ({ ...s, checking: true, error: null }));
     try {
-      const result = await check();
+      const db = await getDb();
+      const row = await db.select<{ value: string }[]>(
+        "SELECT value FROM settings WHERE key = 'device_token'"
+      );
+      const token = row[0]?.value;
+      const headers: Record<string, string> = token
+        ? { 'X-Device-Token': token }
+        : {};
+      const result = await check({ headers });
       if (result) {
         setUpdate(result);
         setState((s) => ({
@@ -68,6 +77,14 @@ export function useUpdater() {
     if (!update) return;
     setState((s) => ({ ...s, downloading: true, progress: 0, error: null }));
     try {
+      const db = await getDb();
+      const row = await db.select<{ value: string }[]>(
+        "SELECT value FROM settings WHERE key = 'device_token'"
+      );
+      const token = row[0]?.value;
+      const headers: Record<string, string> = token
+        ? { 'X-Device-Token': token }
+        : {};
       let totalLength = 0;
       let downloaded = 0;
       await update.downloadAndInstall((event) => {
@@ -84,7 +101,7 @@ export function useUpdater() {
         } else if (event.event === 'Finished') {
           setState((s) => ({ ...s, progress: 100 }));
         }
-      });
+      }, { headers });
       await invoke('relaunch_app');
     } catch (e) {
       setState((s) => ({
