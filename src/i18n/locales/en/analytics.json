@@ -1,0 +1,95 @@
+{
+  "title": "Analytics",
+  "subtitle": "Insights into your productivity patterns and work habits",
+  "period": {
+    "7d": "Last 7 days",
+    "30d": "Last 30 days",
+    "all": "All time"
+  },
+  "stats": {
+    "entriesToday": {
+      "label": "Entries Today",
+      "description": "Work entries logged today"
+    },
+    "weeklyTotal": {
+      "label": "Weekly Total",
+      "description": "Entries in the last 7 days"
+    },
+    "currentStreak": {
+      "label": "Current Streak",
+      "description": "Consecutive days with entries",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days"
+    },
+    "aiSummaries": {
+      "label": "AI Summaries",
+      "description": "Summaries generated this period"
+    },
+    "tasksCompleted": {
+      "label": "Tasks Completed",
+      "description": "Sprint tasks marked as done"
+    },
+    "successRate": {
+      "label": "AI Success Rate",
+      "description": "Successful AI calls this period"
+    },
+    "avgResponseTime": {
+      "label": "Avg Response Time",
+      "description": "Average AI response time this period",
+      "value": "{{value}}ms"
+    }
+  },
+  "charts": {
+    "dailyActivity": {
+      "title": "Daily Activity",
+      "manual": "Manual",
+      "auto": "Auto-captured"
+    },
+    "hourlyHeatmap": {
+      "title": "Hourly Activity",
+      "days": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "tooltip": "{{count}} entries"
+    },
+    "weeklyTrend": {
+      "title": "Weekly Trend",
+      "entries": "Entries"
+    },
+    "taskStatus": {
+      "title": "Task Status",
+      "statuses": {
+        "todo": "To Do",
+        "in-progress": "In Progress",
+        "done": "Done",
+        "blocked": "Blocked"
+      }
+    },
+    "priorityBreakdown": {
+      "title": "Priority Breakdown",
+      "priorities": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      }
+    },
+    "tokenUsage": {
+      "title": "Token Usage",
+      "tokens": "Tokens"
+    }
+  },
+  "empty": {
+    "noEntries": {
+      "title": "No work entries yet",
+      "message": "Start logging your work to see activity analytics.",
+      "action": "Go to Work Log"
+    },
+    "noTasks": {
+      "title": "No sprint tasks yet",
+      "message": "Create tasks on the Sprint Board to track progress.",
+      "action": "Go to Sprint Board"
+    },
+    "noAiData": {
+      "title": "No AI usage data",
+      "message": "Generate summaries to see AI usage analytics."
+    }
+  }
+}

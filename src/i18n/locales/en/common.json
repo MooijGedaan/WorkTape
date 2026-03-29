@@ -7,7 +7,8 @@
     "settings": "Settings",
     "help": "Help",
     "calendar": "AI Calendar",
-    "sprintBoard": "Sprint Board"
+    "sprintBoard": "Sprint Board",
+    "analytics": "Analytics"
   },
   "actions": {
     "save": "Save",

@@ -1,0 +1,95 @@
+{
+  "title": "Analyse",
+  "subtitle": "Inzichten in uw productiviteitspatronen en werkgewoonten",
+  "period": {
+    "7d": "Afgelopen 7 dagen",
+    "30d": "Afgelopen 30 dagen",
+    "all": "Alles"
+  },
+  "stats": {
+    "entriesToday": {
+      "label": "Items vandaag",
+      "description": "Werkitems van vandaag"
+    },
+    "weeklyTotal": {
+      "label": "Weektotaal",
+      "description": "Items in de afgelopen 7 dagen"
+    },
+    "currentStreak": {
+      "label": "Huidige reeks",
+      "description": "Opeenvolgende dagen met items",
+      "days_one": "{{count}} dag",
+      "days_other": "{{count}} dagen"
+    },
+    "aiSummaries": {
+      "label": "AI-samenvattingen",
+      "description": "Gegenereerde samenvattingen deze periode"
+    },
+    "tasksCompleted": {
+      "label": "Taken voltooid",
+      "description": "Sprinttaken gemarkeerd als klaar"
+    },
+    "successRate": {
+      "label": "AI-slagingspercentage",
+      "description": "Succesvolle AI-aanroepen deze periode"
+    },
+    "avgResponseTime": {
+      "label": "Gem. responstijd",
+      "description": "Gemiddelde AI-responstijd deze periode",
+      "value": "{{value}}ms"
+    }
+  },
+  "charts": {
+    "dailyActivity": {
+      "title": "Dagelijkse activiteit",
+      "manual": "Handmatig",
+      "auto": "Automatisch vastgelegd"
+    },
+    "hourlyHeatmap": {
+      "title": "Activiteit per uur",
+      "days": ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"],
+      "tooltip": "{{count}} items"
+    },
+    "weeklyTrend": {
+      "title": "Weektrend",
+      "entries": "Items"
+    },
+    "taskStatus": {
+      "title": "Taakstatus",
+      "statuses": {
+        "todo": "Te doen",
+        "in-progress": "Bezig",
+        "done": "Klaar",
+        "blocked": "Geblokkeerd"
+      }
+    },
+    "priorityBreakdown": {
+      "title": "Prioriteitsverdeling",
+      "priorities": {
+        "low": "Laag",
+        "medium": "Gemiddeld",
+        "high": "Hoog"
+      }
+    },
+    "tokenUsage": {
+      "title": "Tokengebruik",
+      "tokens": "Tokens"
+    }
+  },
+  "empty": {
+    "noEntries": {
+      "title": "Nog geen werkitems",
+      "message": "Begin met het loggen van uw werk om activiteitsanalyses te zien.",
+      "action": "Ga naar werklogboek"
+    },
+    "noTasks": {
+      "title": "Nog geen sprinttaken",
+      "message": "Maak taken aan op het sprintbord om voortgang bij te houden.",
+      "action": "Ga naar sprintbord"
+    },
+    "noAiData": {
+      "title": "Geen AI-gebruiksdata",
+      "message": "Genereer samenvattingen om AI-gebruiksanalyses te zien."
+    }
+  }
+}

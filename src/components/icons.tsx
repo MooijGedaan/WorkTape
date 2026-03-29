@@ -17,4 +17,5 @@ export {
   ClockIcon,
   CheckCircleIcon,
   ChevronDownIcon,
+  ChartBarIcon,
 } from '@heroicons/react/20/solid';

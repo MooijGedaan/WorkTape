@@ -6,6 +6,7 @@ import { SettingsView } from '../views/SettingsView';
 import { ExportView } from '../views/ExportView';
 import { CalendarView } from '../views/CalendarView';
 import { SprintBoardView } from '../views/SprintBoardView';
+import { AnalyticsView } from '../views/AnalyticsView';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function ViewRouter() {
@@ -18,6 +19,7 @@ export function ViewRouter() {
     'sprint-board': <SprintBoardView initialTaskId={pendingTaskId} onInitialTaskOpened={clearPendingTask} />,
     'settings': <SettingsView />,
     'export': <ExportView />,
+    'analytics': <AnalyticsView />,
   };
 
   return (

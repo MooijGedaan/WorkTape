@@ -27,6 +27,7 @@ import {
   CalendarDaysIcon,
   ViewColumnsIcon,
   CheckCircleIcon,
+  ChartBarIcon,
 } from './icons';
 
 function toLocalDateString(d: Date): string {
@@ -128,6 +129,14 @@ export function ApplicationLayout({ children }: { children: React.ReactNode }) {
               >
                 <ViewColumnsIcon />
                 <SidebarLabel>{t('navigation.sprintBoard')}</SidebarLabel>
+              </SidebarItem>
+
+              <SidebarItem
+                onClick={(e) => { e.preventDefault(); navigate('analytics'); }}
+                current={currentView === 'analytics'}
+              >
+                <ChartBarIcon />
+                <SidebarLabel>{t('navigation.analytics')}</SidebarLabel>
               </SidebarItem>
 
               <SidebarItem
