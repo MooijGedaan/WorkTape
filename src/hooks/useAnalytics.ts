@@ -140,11 +140,10 @@ export function useAnalytics(period: Period) {
                CAST(strftime('%H', timestamp) AS INTEGER) as hour,
                COUNT(*) as count
              FROM (
-               SELECT timestamp FROM work_entries
+               SELECT timestamp FROM work_entries ${dateFilter}
                UNION ALL
-               SELECT timestamp FROM auto_work_entries
+               SELECT timestamp FROM auto_work_entries ${dateFilter}
              )
-             ${dateFilter}
              GROUP BY day_of_week, hour`
           ),
 
@@ -152,11 +151,10 @@ export function useAnalytics(period: Period) {
           db.select<WeeklyEntry[]>(
             `SELECT strftime('%Y-%W', timestamp) as week, COUNT(*) as count
              FROM (
-               SELECT timestamp FROM work_entries
+               SELECT timestamp FROM work_entries ${dateFilter}
                UNION ALL
-               SELECT timestamp FROM auto_work_entries
+               SELECT timestamp FROM auto_work_entries ${dateFilter}
              )
-             ${dateFilter}
              GROUP BY week
              ORDER BY week`
           ),

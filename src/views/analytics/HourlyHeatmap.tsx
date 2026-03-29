@@ -15,8 +15,10 @@ export function HourlyHeatmap({ data, isLoading }: HourlyHeatmapProps) {
     const g: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
     let max = 0;
     for (const row of data) {
-      g[row.day_of_week][row.hour] = row.count;
-      if (row.count > max) max = row.count;
+      if (row.day_of_week >= 0 && row.day_of_week < 7 && row.hour >= 0 && row.hour < 24) {
+        g[row.day_of_week][row.hour] = row.count;
+        if (row.count > max) max = row.count;
+      }
     }
     return { grid: g, maxCount: max };
   }, [data]);
