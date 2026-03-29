@@ -30,3 +30,4 @@ CLAUDE.md
 *.sw?
 .claude
 catalyst-ui-kit
+.worktrees
