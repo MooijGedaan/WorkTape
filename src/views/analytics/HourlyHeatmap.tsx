@@ -8,7 +8,8 @@ interface HourlyHeatmapProps {
 
 export function HourlyHeatmap({ data, isLoading }: HourlyHeatmapProps) {
   const { t } = useTranslation('analytics');
-  const days: string[] = t('charts.hourlyHeatmap.days', { returnObjects: true });
+  const daysRaw = t('charts.hourlyHeatmap.days', { returnObjects: true });
+  const days: string[] = Array.isArray(daysRaw) ? daysRaw : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const { grid, maxCount } = useMemo(() => {
     const g: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
