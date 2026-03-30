@@ -86,6 +86,17 @@
     "conflict": "This shortcut conflicts with {{conflict}}",
     "saved": "Shortcut saved!"
   },
+  "calendar": {
+    "title": "Calendar Integration",
+    "description": "Connect your Outlook calendar to include meeting context in your daily summaries.",
+    "connect": "Connect Outlook Calendar",
+    "connected": "Outlook Calendar connected",
+    "disconnect": "Disconnect",
+    "reconnect": "Reconnect",
+    "expired": "Calendar connection expired. Please reconnect.",
+    "connecting": "Connecting…",
+    "connectedAs": "Connected as {{email}}"
+  },
   "developerTools": {
     "title": "Developer tools",
     "description": "These actions are intended for development and testing only.",

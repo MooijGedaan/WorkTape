@@ -4,6 +4,7 @@ use tauri_plugin_autostart::MacosLauncher;
 
 mod openai;
 mod prompt;
+mod microsoft;
 
 struct AppBundlePath(Option<std::path::PathBuf>);
 
@@ -1464,6 +1465,103 @@ async fn is_day_ended(app: tauri::AppHandle, date: String) -> Result<bool, Strin
     Ok(result.0 > 0)
 }
 
+// Microsoft Entra ID client ID — set this after registering the app in Azure portal
+const MS_CLIENT_ID: &str = "YOUR_CLIENT_ID_HERE";
+
+#[tauri::command]
+async fn start_microsoft_auth(app: tauri::AppHandle) -> Result<String, String> {
+    let db_path = app.path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+        .join("worktape.db");
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&format!("sqlite:{}", db_path.display()))
+        .await
+        .map_err(|e| format!("Failed to open DB: {}", e))?;
+
+    let email = microsoft::start_auth_flow(MS_CLIENT_ID, &pool).await?;
+    pool.close().await;
+    Ok(email)
+}
+
+#[tauri::command]
+async fn get_microsoft_auth_status(app: tauri::AppHandle) -> Result<(String, Option<String>), String> {
+    let db_path = app.path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+        .join("worktape.db");
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&format!("sqlite:{}", db_path.display()))
+        .await
+        .map_err(|e| format!("Failed to open DB: {}", e))?;
+
+    let status = microsoft::get_auth_status(&pool).await?;
+    let email = microsoft::get_account_email(&pool).await?;
+    pool.close().await;
+    Ok((status, email))
+}
+
+#[tauri::command]
+async fn disconnect_microsoft(app: tauri::AppHandle) -> Result<(), String> {
+    let db_path = app.path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+        .join("worktape.db");
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&format!("sqlite:{}", db_path.display()))
+        .await
+        .map_err(|e| format!("Failed to open DB: {}", e))?;
+
+    microsoft::disconnect(&pool).await?;
+    pool.close().await;
+    Ok(())
+}
+
+#[tauri::command]
+async fn fetch_calendar_events(app: tauri::AppHandle, date: String) -> Result<Vec<microsoft::CalendarEvent>, String> {
+    let db_path = app.path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+        .join("worktape.db");
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect(&format!("sqlite:{}", db_path.display()))
+        .await
+        .map_err(|e| format!("Failed to open DB: {}", e))?;
+
+    // Try to refresh token if needed
+    let access_token = microsoft::refresh_token_if_needed(MS_CLIENT_ID, &pool).await?;
+    let access_token = match access_token {
+        Some(t) => t,
+        None => {
+            pool.close().await;
+            return Err("Not connected to Microsoft calendar".to_string());
+        }
+    };
+
+    let events = microsoft::fetch_calendar_events(&access_token, &date).await;
+
+    // Handle 401 by attempting a refresh
+    match events {
+        Err(ref e) if e == "CALENDAR_UNAUTHORIZED" => {
+            // Force refresh
+            let refreshed = microsoft::refresh_token_if_needed(MS_CLIENT_ID, &pool).await?;
+            pool.close().await;
+            match refreshed {
+                Some(new_token) => microsoft::fetch_calendar_events(&new_token, &date).await,
+                None => Err("Calendar authentication expired. Please reconnect.".to_string()),
+            }
+        }
+        other => {
+            pool.close().await;
+            other
+        }
+    }
+}
+
 #[tauri::command]
 async fn generate_grouped_daily_summary(
     app: tauri::AppHandle,
@@ -1517,9 +1615,54 @@ async fn generate_grouped_daily_summary(
     // Get or register device token
     let device_token = ensure_device_token(&pool).await?;
 
+    // Try to fetch calendar events if Microsoft is connected (graceful degradation)
+    let calendar_context = {
+        let status = microsoft::get_auth_status(&pool).await.unwrap_or_default();
+        if status == "connected" || status == "expired" {
+            match microsoft::refresh_token_if_needed(MS_CLIENT_ID, &pool).await {
+                Ok(Some(token)) => {
+                    match microsoft::fetch_calendar_events(&token, &date).await {
+                        Ok(events) if !events.is_empty() => {
+                            let formatted = microsoft::format_events_for_prompt(&events);
+                            let ctx = if language == "nl" {
+                                format!(
+                                    "De gebruiker had de volgende agenda-items op deze dag:\n{}\n\n\
+                                    Gebruik deze agenda-items als context om de samenvatting nauwkeuriger \
+                                    te maken. Als werkitems verwijzen naar een overleg of vergadering, kun \
+                                    je het daadwerkelijke agenda-item benoemen. Som de agenda-items niet \
+                                    apart op — verwerk ze op een natuurlijke manier in de samenvatting.",
+                                    formatted
+                                )
+                            } else {
+                                format!(
+                                    "The user had the following calendar events on this day:\n{}\n\n\
+                                    Use these calendar events as context to make the summary more accurate. \
+                                    For example, if work entries mention a discussion or meeting, you can \
+                                    reference the actual calendar event. Do not list the calendar events \
+                                    separately — weave them naturally into the summary of work done.",
+                                    formatted
+                                )
+                            };
+                            Some(ctx)
+                        }
+                        Ok(_) => None, // No events
+                        Err(e) => {
+                            log::warn!("Failed to fetch calendar events (proceeding without): {}", e);
+                            None
+                        }
+                    }
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
+    };
+
     // Call AI with retry on token revocation
     let result = openai::generate_grouped_summary(
-        task_groups.clone(), &date, &language, &device_token
+        task_groups.clone(), &date, &language, &device_token,
+        calendar_context.as_deref(),
     ).await;
 
     let (json, new_labels) = match result {
@@ -1529,7 +1672,8 @@ async fn generate_grouped_daily_summary(
                 .execute(&pool).await.ok();
             let new_token = register_device(&pool).await?;
             openai::generate_grouped_summary(
-                task_groups, &date, &language, &new_token
+                task_groups, &date, &language, &new_token,
+                calendar_context.as_deref(),
             ).await?
         }
         other => other?,
@@ -1964,7 +2108,11 @@ pub fn run() {
             set_shortcut_settings,
             register_global_shortcut,
             show_quick_entry,
-            close_quick_entry
+            close_quick_entry,
+            start_microsoft_auth,
+            get_microsoft_auth_status,
+            disconnect_microsoft,
+            fetch_calendar_events
         ])
         .setup(|app| {
             // Capture the .app bundle path at startup (before any update replaces it)

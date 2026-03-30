@@ -46,6 +46,9 @@ export function SettingsView() {
   const [shortcutEnabled, setShortcutEnabled] = useState(true);
   const [isRecordingShortcut, setIsRecordingShortcut] = useState(false);
   const [shortcutSaveMessage, setShortcutSaveMessage] = useState<string | null>(null);
+  const [calendarStatus, setCalendarStatus] = useState<'disconnected' | 'connected' | 'expired'>('disconnected');
+  const [calendarEmail, setCalendarEmail] = useState<string | null>(null);
+  const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
 
   // Load settings on mount
   useEffect(() => {
@@ -87,6 +90,15 @@ export function SettingsView() {
         setShortcutEnabled(enabled);
       } catch (e) {
         console.error('Failed to load shortcut settings:', e);
+      }
+
+      // Load calendar integration status
+      try {
+        const [status, email] = await invoke<[string, string | null]>('get_microsoft_auth_status');
+        setCalendarStatus(status as 'disconnected' | 'connected' | 'expired');
+        setCalendarEmail(email);
+      } catch (e) {
+        console.error('Failed to load calendar status:', e);
       }
 
       // Check if today has been ended
@@ -261,6 +273,31 @@ export function SettingsView() {
   const toggleShortcutEnabled = async (enabled: boolean) => {
     setShortcutEnabled(enabled);
     await saveShortcutSettings(shortcutKey, enabled);
+  };
+
+  const connectCalendar = async () => {
+    try {
+      setIsConnectingCalendar(true);
+      const email = await invoke<string>('start_microsoft_auth');
+      setCalendarStatus('connected');
+      setCalendarEmail(email);
+    } catch (error) {
+      console.error('Failed to connect calendar:', error);
+      setErrorMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsConnectingCalendar(false);
+    }
+  };
+
+  const disconnectCalendar = async () => {
+    try {
+      await invoke('disconnect_microsoft');
+      setCalendarStatus('disconnected');
+      setCalendarEmail(null);
+    } catch (error) {
+      console.error('Failed to disconnect calendar:', error);
+      setErrorMessage(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const activeHintDef = activeHint ? HINT_DEFINITIONS[activeHint] : null;
@@ -467,6 +504,71 @@ export function SettingsView() {
               {shortcutSaveMessage}
             </Text>
           )}
+        </div>
+
+        {/* Calendar Integration */}
+        <div className="rounded-xl bg-white dark:bg-slate-800/50 p-6 ring-1 ring-slate-200 dark:ring-white/5">
+          <h3 className="text-sm font-medium text-zinc-950 dark:text-white">
+            {t('settings:calendar.title')}
+          </h3>
+          <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            {t('settings:calendar.description')}
+          </Text>
+
+          <div className="mt-3">
+            {calendarStatus === 'disconnected' && (
+              <Button
+                onClick={connectCalendar}
+                disabled={isConnectingCalendar}
+                color="amber"
+              >
+                {isConnectingCalendar ? t('settings:calendar.connecting') : t('settings:calendar.connect')}
+              </Button>
+            )}
+
+            {calendarStatus === 'connected' && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                  <Text className="text-sm font-medium text-green-700 dark:text-green-400">
+                    {t('settings:calendar.connected')}
+                  </Text>
+                </div>
+                {calendarEmail && (
+                  <Text className="text-sm text-zinc-500 dark:text-zinc-400">
+                    {t('settings:calendar.connectedAs', { email: calendarEmail })}
+                  </Text>
+                )}
+                <div className="flex-1" />
+                <Button onClick={disconnectCalendar} color="zinc">
+                  {t('settings:calendar.disconnect')}
+                </Button>
+              </div>
+            )}
+
+            {calendarStatus === 'expired' && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+                  <Text className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+                    {t('settings:calendar.expired')}
+                  </Text>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={connectCalendar}
+                    disabled={isConnectingCalendar}
+                    color="amber"
+                  >
+                    {isConnectingCalendar ? t('settings:calendar.connecting') : t('settings:calendar.reconnect')}
+                  </Button>
+                  <Button onClick={disconnectCalendar} color="zinc">
+                    {t('settings:calendar.disconnect')}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Software Updates */}

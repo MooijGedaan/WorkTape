@@ -179,11 +179,13 @@ pub struct NewTaskLabel {
 
 /// Generate labeled summary items: one per linked task, AI-clustered groups for unlinked entries.
 /// Returns (JSON string: array of {label, summary}, new labels to persist).
+/// If calendar_context is provided, it is appended to each user prompt for richer summaries.
 pub async fn generate_grouped_summary(
     task_groups: Vec<TaskGroup>,
     date: &str,
     language: &str,
     device_token: &str,
+    calendar_context: Option<&str>,
 ) -> Result<(String, Vec<NewTaskLabel>), String> {
     if task_groups.is_empty() {
         return Err(format!("No work entries found for {}.", date));
@@ -204,7 +206,7 @@ pub async fn generate_grouped_summary(
                 if let Some(cached_label) = &group.cached_label {
                     // Label already known — only ask AI for the summary sentence
                     let system_prompt = build_linked_task_summary_only_prompt(language);
-                    let user_message = build_linked_task_user_prompt(task_title, &group.entries, date);
+                    let user_message = build_linked_task_user_prompt(task_title, &group.entries, date, calendar_context);
 
                     let summary = call_openai_single(
                         &client, &endpoint,
@@ -219,7 +221,7 @@ pub async fn generate_grouped_summary(
                 } else {
                     // No cached label — ask AI for {label, summary} and remember the new label
                     let system_prompt = build_linked_task_system_prompt(language);
-                    let user_message = build_linked_task_user_prompt(task_title, &group.entries, date);
+                    let user_message = build_linked_task_user_prompt(task_title, &group.entries, date, calendar_context);
 
                     let raw = call_openai_single(
                         &client, &endpoint,
@@ -244,7 +246,7 @@ pub async fn generate_grouped_summary(
             None => {
                 // Unlinked entries: one call → AI clusters them and returns JSON array of {label, summary}
                 let system_prompt = build_unlinked_system_prompt(language);
-                let user_message = build_unlinked_user_prompt(&group.entries, date);
+                let user_message = build_unlinked_user_prompt(&group.entries, date, calendar_context);
 
                 let raw = call_openai_single(
                     &client, &endpoint,
@@ -396,7 +398,7 @@ Be brief and factual — this is a personal reminder, not a report. \
     )
 }
 
-fn build_linked_task_user_prompt(task_title: &str, entries: &[WorkEntry], date: &str) -> String {
+fn build_linked_task_user_prompt(task_title: &str, entries: &[WorkEntry], date: &str, calendar_context: Option<&str>) -> String {
     let mut prompt = format!("Task: {}\nWork entries for {} ({} total):\n\n", task_title, date, entries.len());
     for entry in entries {
         let time = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&entry.timestamp) {
@@ -405,6 +407,9 @@ fn build_linked_task_user_prompt(task_title: &str, entries: &[WorkEntry], date: 
             entry.timestamp.clone()
         };
         prompt.push_str(&format!("{}: {}\n", time, entry.description));
+    }
+    if let Some(ctx) = calendar_context {
+        prompt.push_str(&format!("\n{}", ctx));
     }
     prompt
 }
@@ -423,7 +428,7 @@ Return only the JSON array, no other text. Example: \
     )
 }
 
-fn build_unlinked_user_prompt(entries: &[WorkEntry], date: &str) -> String {
+fn build_unlinked_user_prompt(entries: &[WorkEntry], date: &str, calendar_context: Option<&str>) -> String {
     let mut prompt = format!("Unlinked work entries for {} ({} total):\n\n", date, entries.len());
     for entry in entries {
         let time = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&entry.timestamp) {
@@ -432,6 +437,9 @@ fn build_unlinked_user_prompt(entries: &[WorkEntry], date: &str) -> String {
             entry.timestamp.clone()
         };
         prompt.push_str(&format!("{}: {}\n", time, entry.description));
+    }
+    if let Some(ctx) = calendar_context {
+        prompt.push_str(&format!("\n{}", ctx));
     }
     prompt
 }

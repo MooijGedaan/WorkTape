@@ -50,6 +50,8 @@ describe("SettingsView", () => {
       switch (cmd) {
         case "get_debug_mode": return Promise.resolve(false);
         case "get_debug_logs_retention_days": return Promise.resolve(7);
+        case "get_shortcut_settings": return Promise.resolve(["CmdOrCtrl+Shift+W", true]);
+        case "get_microsoft_auth_status": return Promise.resolve(["disconnected", null]);
         default: return Promise.resolve(null);
       }
     });
