@@ -23,6 +23,7 @@
   "regenerateMonthSummary": "Regenerate AI summary for this month",
   "generatingWeekSummary": "Generating week summary…",
   "generatingMonthSummary": "Generating month summary…",
+  "currentWeek": "Current week",
   "weekInProgress": "Generate daily summaries for all days in this week first.",
   "monthInProgress": "Generate weekly summaries for all weeks in this month first.",
   "weekStats": "{{days}} days, {{entries}} entries",
