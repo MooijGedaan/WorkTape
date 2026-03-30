@@ -109,6 +109,18 @@ function buildDays(entryDates: Set<string>): string[] {
   return Array.from(days).sort((a, b) => b.localeCompare(a));
 }
 
+/** Find the month that contains the majority (4+) of an ISO week's 7 days. */
+function getMajorityMonth(year: number, weekNum: number): { month: number; year: number } {
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayOfWeek = jan4.getUTCDay() || 7;
+  const monday = new Date(jan4);
+  monday.setUTCDate(jan4.getUTCDate() - dayOfWeek + 1 + (weekNum - 1) * 7);
+  // Thursday (day index 3) is always in the majority month
+  const thursday = new Date(monday);
+  thursday.setUTCDate(monday.getUTCDate() + 3);
+  return { month: thursday.getUTCMonth(), year: thursday.getUTCFullYear() };
+}
+
 function groupByWeek(days: DayData[], locale: string, weekWord: string, weeklySummaryMap: Map<string, string>): WeekGroup[] {
   const groups: WeekGroup[] = [];
   let currentKey = '';
@@ -117,17 +129,18 @@ function groupByWeek(days: DayData[], locale: string, weekWord: string, weeklySu
   for (const day of days) {
     const date = new Date(day.date + 'T12:00:00'); // noon to avoid DST edge
     const week = getWeekNumber(date);
-    const monthStr = date.toLocaleString(locale, { month: 'long' });
     const year = date.getFullYear();
-    const monthNum = date.getMonth();
     const key = `${year}-W${week}`;
     if (key !== currentKey) {
       currentKey = key;
+      const majority = getMajorityMonth(year, week);
+      const monthDate = new Date(Date.UTC(majority.year, majority.month, 1));
+      const monthStr = monthDate.toLocaleString(locale, { month: 'long', timeZone: 'UTC' });
       currentGroup = {
-        label: `${weekWord} ${week} · ${monthStr} ${year}`,
-        year,
+        label: `${weekWord} ${week} · ${monthStr} ${majority.year}`,
+        year: majority.year,
         weekNum: week,
-        month: monthNum,
+        month: majority.month,
         days: [],
         weeklySummary: weeklySummaryMap.get(key) ?? null,
       };
@@ -171,12 +184,14 @@ function buildPlaceholderWeek(year: number, weekNum: number, locale: string, wee
     });
   }
 
-  const monthStr = monday.toLocaleString(locale, { month: 'long' });
+  const majority = getMajorityMonth(year, weekNum);
+  const monthDate = new Date(Date.UTC(majority.year, majority.month, 1));
+  const monthStr = monthDate.toLocaleString(locale, { month: 'long', timeZone: 'UTC' });
   return {
-    label: `${weekWord} ${weekNum} · ${monthStr} ${monday.getFullYear()}`,
-    year,
+    label: `${weekWord} ${weekNum} · ${monthStr} ${majority.year}`,
+    year: majority.year,
     weekNum,
-    month: monday.getMonth(),
+    month: majority.month,
     days: days.sort((a, b) => b.date.localeCompare(a.date)),
     weeklySummary: null,
   };
@@ -190,49 +205,31 @@ function getWeeksForMonth(
   locale: string,
   weekWord: string,
 ): WeekGroup[] {
-  // First try to find existing week groups for this month
-  const existing = allWeeks.filter(w => w.month === month && w.year === year);
-  if (existing.length > 0) return existing;
+  const existingByKey = new Map(
+    allWeeks.filter(w => w.month === month && w.year === year).map(w => [`${w.year}-W${w.weekNum}`, w])
+  );
 
-  // No data — build placeholder week groups for every day in the month
+  // Build the full set of ISO weeks whose majority of days fall in this month
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-  const daysByWeek = new Map<string, DayData[]>();
-  const weekMeta = new Map<string, { weekNum: number; monthStr: string; year: number }>();
-  const todayStr = toLocalDateString(new Date());
+  const seenWeeks = new Set<string>();
 
   for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-    const dateStr = toLocalDateString(d);
     const weekNum = getWeekNumber(d);
-    const key = `${d.getFullYear()}-W${weekNum}`;
-    if (!daysByWeek.has(key)) {
-      daysByWeek.set(key, []);
-      weekMeta.set(key, {
-        weekNum,
-        monthStr: d.toLocaleString(locale, { month: 'long' }),
-        year: d.getFullYear(),
-      });
-    }
-    daysByWeek.get(key)!.push({
-      date: dateStr,
-      summary: null,
-      entryCount: 0,
-      isToday: dateStr === todayStr,
-      isDayEnded: false,
-    });
+    const majority = getMajorityMonth(d.getFullYear(), weekNum);
+    if (majority.month !== month || majority.year !== year) continue;
+    const key = `${majority.year}-W${weekNum}`;
+    seenWeeks.add(key);
   }
 
   const groups: WeekGroup[] = [];
-  for (const [key, days] of daysByWeek) {
-    const meta = weekMeta.get(key)!;
-    groups.push({
-      label: `${weekWord} ${meta.weekNum} · ${meta.monthStr} ${meta.year}`,
-      year: meta.year,
-      weekNum: meta.weekNum,
-      month,
-      days: days.sort((a, b) => b.date.localeCompare(a.date)),
-      weeklySummary: null,
-    });
+  for (const key of seenWeeks) {
+    if (existingByKey.has(key)) {
+      groups.push(existingByKey.get(key)!);
+    } else {
+      const weekNum = parseInt(key.split('-W')[1]);
+      groups.push(buildPlaceholderWeek(year, weekNum, locale, weekWord));
+    }
   }
   return groups;
 }
@@ -262,6 +259,30 @@ function SummaryItems({ items, onLabelClick }: { items: SummaryItem[]; onLabelCl
             )}
           </div>
           <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{item.summary}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StatusLabel({ text }: { text: string }) {
+  return <span className="text-xs text-amber-500 dark:text-amber-400 font-medium">{text}</span>;
+}
+
+function CompactFutureGroup({ items }: { items: { key: string; label: string; sublabel?: string }[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="w-full border rounded-xl bg-white dark:bg-zinc-900 overflow-hidden border-zinc-200 dark:border-zinc-700">
+      {items.map((item, idx) => (
+        <div
+          key={item.key}
+          className={`flex items-baseline gap-3 px-5 py-2.5 bg-zinc-50 dark:bg-zinc-800/50${
+            idx < items.length - 1 ? ' border-b border-zinc-100 dark:border-zinc-800' : ''
+          }`}
+        >
+          <span className={`${item.sublabel ? 'text-lg font-bold' : 'text-sm font-medium'} text-zinc-400 dark:text-zinc-500 leading-none`}>{item.label}</span>
+          {item.sublabel && <span className="text-sm font-medium text-zinc-400 dark:text-zinc-500">{item.sublabel}</span>}
         </div>
       ))}
     </div>
@@ -300,9 +321,7 @@ function DayCard({ day, onGenerate, onLabelClick }: { day: DayData; onGenerate: 
           </span>
         )}
         {day.isToday && !day.isDayEnded && (
-          <span className="ml-2 inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-700/10 dark:ring-amber-300/10">
-            {t('today')}
-          </span>
+          <span className="ml-auto"><StatusLabel text={t('today')} /></span>
         )}
         {day.entryCount > 0 && (
           <span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">
@@ -373,10 +392,12 @@ function WeekSummaryCard({
 
   const daysWithEntries = week.days.filter(d => d.entryCount > 0).length;
   const totalEntries = week.days.reduce((sum, d) => sum + d.entryCount, 0);
-  const allDaysHaveSummaries = week.days.every(d => d.entryCount === 0 || d.summary !== null);
+  const hasSomeSummaries = week.days.some(d => d.entryCount > 0 && d.summary !== null);
   const isCurrentWeek = week.days.some(d => d.isToday && !d.isDayEnded);
 
-  const canGenerate = !isCurrentWeek && allDaysHaveSummaries && daysWithEntries > 0;
+  // During the current week, require all days with entries to have summaries.
+  // For past weeks, allow generation as long as at least one day has a summary.
+  const canGenerate = !isCurrentWeek && hasSomeSummaries && daysWithEntries > 0;
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -412,6 +433,8 @@ function WeekSummaryCard({
             >
               {isGenerating ? t('generatingWeekSummary') : t('generateWeekSummary')}
             </button>
+          ) : isCurrentWeek ? (
+            <StatusLabel text={t('currentWeek')} />
           ) : (
             <span className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('weekInProgress')}</span>
           )}
@@ -456,6 +479,8 @@ function WeekSummaryCard({
               {isGenerating ? t('generatingWeekSummary') : t('generateWeekSummary')}
             </button>
           </div>
+        ) : isCurrentWeek ? (
+          <StatusLabel text={t('currentWeek')} />
         ) : (
           <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('weekInProgress')}</p>
         )}
@@ -667,13 +692,34 @@ function DaysTab({
 }) {
   const { t, i18n } = useTranslation('calendar');
 
-  // Find the selected week, or build a placeholder
+  // Find the selected week, or build a placeholder.
+  // Merge with placeholder to ensure all 7 days of the week are present (buildDays only creates past days).
   const existing = weeks.find(w => w.weekNum === navWeek && w.year === navYear);
-  const weekGroup = existing ?? buildPlaceholderWeek(navYear, navWeek, i18n.language, t('week'));
+  const placeholder = buildPlaceholderWeek(navYear, navWeek, i18n.language, t('week'));
+  const weekGroup = useMemo(() => {
+    if (!existing) return placeholder;
+    const existingDates = new Set(existing.days.map(d => d.date));
+    const missingDays = placeholder.days.filter(d => !existingDates.has(d.date));
+    if (missingDays.length === 0) return existing;
+    return {
+      ...existing,
+      days: [...existing.days, ...missingDays].sort((a, b) => b.date.localeCompare(a.date)),
+    };
+  }, [existing, placeholder]);
+
+  const todayStr = toLocalDateString(new Date());
+  const futureDays = weekGroup.days.filter(d => d.date > todayStr);
+  const currentAndPastDays = weekGroup.days.filter(d => d.date <= todayStr);
+
+  const futureDayItems = futureDays.map(d => {
+    const { dayNum, dayName } = formatDayHeader(d.date, i18n.language);
+    return { key: d.date, label: dayNum, sublabel: dayName };
+  });
 
   return (
     <div className="space-y-3">
-      {weekGroup.days.map((day) => (
+      <CompactFutureGroup items={futureDayItems} />
+      {currentAndPastDays.map((day) => (
         <DayCard key={day.date} day={day} onGenerate={onGenerateDay} onLabelClick={onLabelClick} />
       ))}
     </div>
@@ -703,10 +749,10 @@ function WeeksTab({
   const filtered = getWeeksForMonth(weeks, activeYear, activeMonth, i18n.language, t('week'));
 
   const eligibleForGeneration = filtered.filter(w => {
-    const allDaysHaveSummaries = w.days.every(d => d.entryCount === 0 || d.summary !== null);
+    const hasSomeSummaries = w.days.some(d => d.entryCount > 0 && d.summary !== null);
     const isCurrentWeek = w.days.some(d => d.isToday && !d.isDayEnded);
     const daysWithEntries = w.days.filter(d => d.entryCount > 0).length;
-    return !isCurrentWeek && allDaysHaveSummaries && daysWithEntries > 0 && !w.weeklySummary;
+    return !isCurrentWeek && hasSomeSummaries && daysWithEntries > 0 && !w.weeklySummary;
   });
 
   const handleGenerateAll = async () => {
@@ -717,6 +763,13 @@ function WeeksTab({
       setIsGeneratingAll(false);
     }
   };
+
+  const todayStr = toLocalDateString(new Date());
+  const isFutureWeek = (w: WeekGroup) => w.days.every(d => d.date > todayStr);
+  const futureWeeks = filtered.filter(isFutureWeek);
+  const currentAndPastWeeks = filtered.filter(w => !isFutureWeek(w));
+
+  const futureWeekItems = futureWeeks.map(w => ({ key: w.label, label: w.label }));
 
   return (
     <div className="space-y-4">
@@ -731,7 +784,8 @@ function WeeksTab({
           </button>
         </div>
       )}
-      {filtered.map(week => (
+      <CompactFutureGroup items={futureWeekItems} />
+      {currentAndPastWeeks.map(week => (
         <WeekSummaryCard
           key={week.label}
           week={week}
@@ -764,13 +818,8 @@ function MonthsTab({
 
   // Build all 12 months for the selected year
   const yearMonths = useMemo(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
     const result: MonthData[] = [];
-    // Only show up to current month for current year, all 12 for past years
-    const maxMonth = navYear === currentYear ? currentMonth : 11;
-    for (let m = maxMonth; m >= 0; m--) {
+    for (let m = 11; m >= 0; m--) {
       const key = `${navYear}-${m}`;
       if (months.has(key)) {
         result.push(months.get(key)!);
@@ -804,6 +853,16 @@ function MonthsTab({
     }
   };
 
+  const now2 = new Date();
+  const currentYear = now2.getFullYear();
+  const currentMonth = now2.getMonth();
+  const futureMonths = yearMonths.filter(m =>
+    m.year > currentYear || (m.year === currentYear && m.month > currentMonth)
+  );
+  const currentAndPastMonths = yearMonths.filter(m =>
+    m.year < currentYear || (m.year === currentYear && m.month <= currentMonth)
+  );
+
   return (
     <div className="space-y-4">
       {eligibleForGeneration.length > 1 && (
@@ -817,7 +876,8 @@ function MonthsTab({
           </button>
         </div>
       )}
-      {yearMonths.map(monthData => (
+      <CompactFutureGroup items={futureMonths.map(m => ({ key: `${m.year}-${m.month}`, label: m.label }))} />
+      {currentAndPastMonths.map(monthData => (
         <MonthSummaryCard
           key={`${monthData.year}-${monthData.month}`}
           monthData={monthData}
@@ -1208,10 +1268,10 @@ export function CalendarView() {
   const handleGenerateAllWeeks = useCallback(async () => {
     const filtered = weeks.filter(w => w.month === navMonth && w.year === navYear);
     for (const week of filtered) {
-      const allDaysHaveSummaries = week.days.every(d => d.entryCount === 0 || d.summary !== null);
+      const hasSomeSummaries = week.days.some(d => d.entryCount > 0 && d.summary !== null);
       const isCurrentWeek = week.days.some(d => d.isToday && !d.isDayEnded);
       const daysWithEntries = week.days.filter(d => d.entryCount > 0).length;
-      if (!isCurrentWeek && allDaysHaveSummaries && daysWithEntries > 0 && !week.weeklySummary) {
+      if (!isCurrentWeek && hasSomeSummaries && daysWithEntries > 0 && !week.weeklySummary) {
         await handleGenerateWeekSummary(week);
       }
     }
