@@ -76,6 +76,17 @@ function QuickEntry() {
     loadData();
   }, [loadData]);
 
+  // Global Escape key to close the window from anywhere
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeWindow();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   // Check if today is ended
   useEffect(() => {
     const today = new Date();
