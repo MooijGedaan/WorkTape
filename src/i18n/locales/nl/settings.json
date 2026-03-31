@@ -88,6 +88,17 @@
     "conflict": "Deze sneltoets conflicteert met {{conflict}}",
     "saved": "Sneltoets opgeslagen!"
   },
+  "calendar": {
+    "title": "Agenda-integratie",
+    "description": "Koppel uw Outlook-agenda om vergadercontext op te nemen in uw dagelijkse samenvattingen.",
+    "connect": "Outlook-agenda koppelen",
+    "connected": "Outlook-agenda gekoppeld",
+    "disconnect": "Ontkoppelen",
+    "reconnect": "Opnieuw koppelen",
+    "expired": "Agendaverbinding verlopen. Koppel opnieuw.",
+    "connecting": "Verbinden…",
+    "connectedAs": "Verbonden als {{email}}"
+  },
   "developerTools": {
     "title": "Ontwikkelaarstools",
     "description": "Deze acties zijn alleen bedoeld voor ontwikkeling en testen.",
