@@ -265,10 +265,6 @@ function SummaryItems({ items, onLabelClick }: { items: SummaryItem[]; onLabelCl
   );
 }
 
-function StatusLabel({ text }: { text: string }) {
-  return <span className="text-xs text-amber-500 dark:text-amber-400 font-medium">{text}</span>;
-}
-
 function CompactFutureGroup({ items }: { items: { key: string; label: string; sublabel?: string }[] }) {
   if (items.length === 0) return null;
 
@@ -319,9 +315,6 @@ function DayCard({ day, onGenerate, onLabelClick }: { day: DayData; onGenerate: 
           <span className="ml-2 inline-flex items-center rounded-md bg-green-50 dark:bg-green-950/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300 ring-1 ring-inset ring-green-700/10 dark:ring-green-300/10">
             {t('dayEnded')}
           </span>
-        )}
-        {day.isToday && !day.isDayEnded && (
-          <span className="ml-auto"><StatusLabel text={t('today')} /></span>
         )}
         {day.entryCount > 0 && (
           <span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">
@@ -433,8 +426,6 @@ function WeekSummaryCard({
             >
               {isGenerating ? t('generatingWeekSummary') : t('generateWeekSummary')}
             </button>
-          ) : isCurrentWeek ? (
-            <StatusLabel text={t('currentWeek')} />
           ) : (
             <span className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('weekInProgress')}</span>
           )}
@@ -479,8 +470,6 @@ function WeekSummaryCard({
               {isGenerating ? t('generatingWeekSummary') : t('generateWeekSummary')}
             </button>
           </div>
-        ) : isCurrentWeek ? (
-          <StatusLabel text={t('currentWeek')} />
         ) : (
           <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">{t('weekInProgress')}</p>
         )}

@@ -34,6 +34,8 @@
     "disabled": "Disabled"
   },
   "sections": {
+    "general": "General",
+    "appearance": "Appearance",
     "darkMode": {
       "title": "Display",
       "description": "Choose your preferred color scheme.",
