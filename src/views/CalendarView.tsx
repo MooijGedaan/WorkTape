@@ -735,7 +735,7 @@ function WeeksTab({
   const { t, i18n } = useTranslation('calendar');
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
 
-  const filtered = getWeeksForMonth(weeks, activeYear, activeMonth, i18n.language, t('week'));
+  const filtered = getWeeksForMonth(weeks, activeYear, activeMonth, i18n.language, t('week')).reverse();
 
   const eligibleForGeneration = filtered.filter(w => {
     const hasSomeSummaries = w.days.some(d => d.entryCount > 0 && d.summary !== null);
